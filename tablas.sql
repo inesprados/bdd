@@ -7,18 +7,20 @@ CREATE TABLE CLIENTES(
     comunidadAutonoma VARCHAR(30) NOT NULL
 );
 
-CREATE TABLE SUCURSAL (
+CREATE TABLE SUCURSALES (
     codSucursal INTEGER PRIMARY KEY,
     nombre VARCHAR(30) NOT NULL,
     ciudad VARCHAR(50) NOT NULL,
     comunidadAutonoma VARCHAR(30) NOT NULL,
     director VARCHAR(10),
-    FOREIGN KEY (codCliente) REFERENCES CLIENTES(codCliente),
+    codCliente VARCHAR(15),
 
-    CONSTRAINT uq_sucursal_director UNIQUE (director)  -- R4
+    CONSTRAINT uq_sucursales_director UNIQUE (director)  -- R4
+    CONSTRAINT fk_sucursal_cliente FOREIGN KEY (codCliente)
+        REFERENCES CLIENTES(codCliente) 
 );
 
-CREATE TABLE EMPLEADO (
+CREATE TABLE EMPLEADOS (
     codEmpleado             VARCHAR(10) PRIMARY KEY,
     DNI                     VARCHAR(15) NOT NULL,
     nombre                  VARCHAR(100) NOT NULL,
@@ -29,7 +31,7 @@ CREATE TABLE EMPLEADO (
 
     CONSTRAINT uq_empleado_dni UNIQUE (DNI), -- R1
     CONSTRAINT fk_empleado_sucursal FOREIGN KEY (codSucursal) 
-        REFERENCES SUCURSAL(codSucursal) -- R7
+        REFERENCES SUCURSALES(codSucursal) -- R7
 );
 
 CREATE TABLE PRODUCTORES(
@@ -49,12 +51,14 @@ CREATE TABLE VINOS(
     viniedoProcedencia VARCHAR(30) NOT NULL,
     comunidadAutonoma VARCHAR(30) NOT NULL,
     cantidadProducida INTEGER NOT NULL CHECK (cantidadProducidad>=0),
-    cantidadStock INTEGER NOT NULL CHECK (cantidadStock>=0 AND cantidadStock <= cantidadProducida),
+
+    cantidadStock INTEGER NOT NULL,
     CONSTRAINT fk_productor FOREIGN KEY (codProductor)
         REFERENCES PRODUCTORES(codProductor)
+    CONSTRAINT chk_stock CHECK (cantidadStock >= 0 AND cantidadStock <= cantidadProducida) -- R14
 );
 
 /* AL FINAL de la creacion de tablas */
-ALTER TABLE SUCURSAL
-    ADD CONSTRAINT fk_sucursal_director FOREIGN KEY (director)
-        REFERENCES EMPLEADO(codEmpleado); -- R3
+ALTER TABLE SUCURSALES
+    ADD CONSTRAINT fk_sucursales_director FOREIGN KEY (director)
+        REFERENCES EMPLEADOS(codEmpleado); -- R3

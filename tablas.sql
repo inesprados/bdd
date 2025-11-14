@@ -91,8 +91,6 @@ CREATE TABLE PEDIDO (
 );
 
 
-
-/* AL FINAL de la creacion de tablas */
 ALTER TABLE SUCURSALES
     ADD CONSTRAINT fk_sucursales_director FOREIGN KEY (director)
         REFERENCES EMPLEADOS(codEmpleado); -- R3

@@ -13,8 +13,8 @@ CREATE TABLE SUCURSAL (
     ciudad VARCHAR(50) NOT NULL,
     comunidadAutonoma VARCHAR(30) NOT NULL,
     director VARCHAR(10),
-    FOREIGN KEY (codCliente) REFERENCES CLIENTES(codCliente),
 
+    CONSTRAINT fk_cliente FOREIGN KEY (codCliente) REFERENCES CLIENTES(codCliente),
     CONSTRAINT uq_sucursal_director UNIQUE (director)  -- R4
 );
 

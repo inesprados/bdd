@@ -1,0 +1,3 @@
+CREATE TABLE CLIENTES(
+    codCliente INTEGER
+)

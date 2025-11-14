@@ -1,3 +1,3 @@
 CREATE TABLE CLIENTES(
-    codCliente INTEGER
+    codCliente PRIMARY KEY INTEGER 
 )

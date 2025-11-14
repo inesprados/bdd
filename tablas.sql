@@ -1,10 +1,12 @@
 CREATE TABLE CLIENTES(
     codCliente VARCHAR(15) PRIMARY KEY,
-    dni VARCHAR(9) NOT NULL UNIQUE,
+    DNI VARCHAR(9) NOT NULL,
     nombre VARCHAR(20) NOT NULL,
     direccion VARCHAR(30) NOT NULL,
     tipoCliente VARCHAR(1) CHECK (tipoCliente IN ('A', 'B', 'C')) NOT NULL,
-    comunidadAutonoma VARCHAR(30) NOT NULL
+    comunidadAutonoma VARCHAR(30) NOT NULL,
+
+    CONSTRAINT uq_cliente_dni UNIQUE (DNI)
 );
 
 CREATE TABLE SUCURSALES (
@@ -36,9 +38,11 @@ CREATE TABLE EMPLEADOS (
 
 CREATE TABLE PRODUCTORES(
     codProductor VARCHAR(15) PRIMARY KEY,
-    dni VARCHAR(9) NOT NULL UNIQUE,
+    DNI VARCHAR(9) NOT NULL,
     nombre VARCHAR(20) NOT NULL,
-    direccion VARCHAR(30) NOT NULL
+    direccion VARCHAR(30) NOT NULL,
+
+    CONSTRAINT uq_productores_dni UNIQUE (DNI)
 );
 
 CREATE TABLE VINOS(
@@ -52,7 +56,7 @@ CREATE TABLE VINOS(
     comunidadAutonoma VARCHAR(30) NOT NULL,
     cantidadProducida INTEGER NOT NULL CHECK (cantidadProducidad>=0),
     cantidadStock INTEGER NOT NULL,
-    
+
     CONSTRAINT fk_productor FOREIGN KEY (codProductor)
         REFERENCES PRODUCTORES(codProductor)
     CONSTRAINT chk_stock CHECK (cantidadStock >= 0 AND cantidadStock <= cantidadProducida) -- R14

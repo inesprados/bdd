@@ -58,6 +58,40 @@ CREATE TABLE VINOS(
     CONSTRAINT chk_stock CHECK (cantidadStock >= 0 AND cantidadStock <= cantidadProducida) -- R14
 );
 
+CREATE TABLE SUMINISTRO (
+    codCliente          VARCHAR(10) NOT NULL,
+    codSucursal         VARCHAR(10) NOT NULL,
+    codVino             VARCHAR(10) NOT NULL,
+    fechaPedido         DATE NOT NULL,
+    cantidadSolicitada  INT NOT NULL,
+
+    CONSTRAINT pk_suministro PRIMARY KEY (codCliente, codSucursal, codVino, fechaPedido), -- R2
+    CONSTRAINT fk_suministro_cliente FOREIGN KEY (codCliente)
+        REFERENCES CLIENTE(codCliente), -- R2
+    CONSTRAINT fk_suministro_sucursal FOREIGN KEY (codSucursal)
+        REFERENCES SUCURSALES(codSucursal), -- R2
+    CONSTRAINT fk_suministro_vino FOREIGN KEY (codVino)
+        REFERENCES VINOS(codVino) -- R11
+);
+
+CREATE TABLE PEDIDO (
+    codSucursalSolicitante  VARCHAR(10) NOT NULL,
+    codSucursalSolicitada   VARCHAR(10) NOT NULL,
+    codVino                 VARCHAR(10) NOT NULL,
+    fechaPedido             DATE NOT NULL,
+    cantidadPedida          INT NOT NULL,
+
+    CONSTRAINT pk_pedido PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino, fechaPedido),
+    CONSTRAINT fk_pedido_solicitante FOREIGN KEY (codSucursalSolicitante)
+        REFERENCES SUCURSALES(codSucursal), -- R2
+    CONSTRAINT fk_pedido_solicitada FOREIGN KEY (codSucursalSolicitada)
+        REFERENCES SUCURSALES(codSucursal), -- R2
+    CONSTRAINT fk_pedido_vino FOREIGN KEY (codVino)
+        REFERENCES VINOS(codVino) -- R2
+);
+
+
+
 /* AL FINAL de la creacion de tablas */
 ALTER TABLE SUCURSALES
     ADD CONSTRAINT fk_sucursales_director FOREIGN KEY (director)

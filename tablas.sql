@@ -51,8 +51,8 @@ CREATE TABLE VINOS(
     viniedoProcedencia VARCHAR(30) NOT NULL,
     comunidadAutonoma VARCHAR(30) NOT NULL,
     cantidadProducida INTEGER NOT NULL CHECK (cantidadProducidad>=0),
-
     cantidadStock INTEGER NOT NULL,
+    
     CONSTRAINT fk_productor FOREIGN KEY (codProductor)
         REFERENCES PRODUCTORES(codProductor)
     CONSTRAINT chk_stock CHECK (cantidadStock >= 0 AND cantidadStock <= cantidadProducida) -- R14

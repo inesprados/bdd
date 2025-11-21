@@ -63,15 +63,12 @@ CREATE TABLE VINOS(
 );
 
 CREATE TABLE SUMINISTRO (
-    codCliente          VARCHAR(10) NOT NULL,
-    codSucursal         VARCHAR(10) NOT NULL,
-    codVino             VARCHAR(10) NOT NULL,
-    fechaPedido         DATE NOT NULL,
+    codSucursal         VARCHAR(10),
+    codVino             VARCHAR(10),
+    fechaPedido         DATE,
     cantidadSolicitada  INT NOT NULL,
 
-    CONSTRAINT pk_suministro PRIMARY KEY (codCliente, codSucursal, codVino, fechaPedido), -- R2
-    CONSTRAINT fk_suministro_cliente FOREIGN KEY (codCliente)
-        REFERENCES CLIENTE(codCliente), -- R2
+    CONSTRAINT pk_suministro PRIMARY KEY (codSucursal, codVino, fechaPedido), -- R2
     CONSTRAINT fk_suministro_sucursal FOREIGN KEY (codSucursal)
         REFERENCES SUCURSALES(codSucursal), -- R2
     CONSTRAINT fk_suministro_vino FOREIGN KEY (codVino)
@@ -79,10 +76,10 @@ CREATE TABLE SUMINISTRO (
 );
 
 CREATE TABLE PEDIDO (
-    codSucursalSolicitante  VARCHAR(10) NOT NULL,
-    codSucursalSolicitada   VARCHAR(10) NOT NULL,
-    codVino                 VARCHAR(10) NOT NULL,
-    fechaPedido             DATE NOT NULL,
+    codSucursalSolicitante  VARCHAR(10),
+    codSucursalSolicitada   VARCHAR(10),
+    codVino                 VARCHAR(10),
+    fechaPedido             DATE,
     cantidadPedida          INT NOT NULL,
 
     CONSTRAINT pk_pedido PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino, fechaPedido),
@@ -94,6 +91,21 @@ CREATE TABLE PEDIDO (
         REFERENCES VINOS(codVino) -- R2
 );
 
+CREATE TABLE SOLICITUD {
+    codVino                 VARCHAR(10),
+    codCliente              VARCHAR(10),
+    codSucursal             VARCHAR(10),
+    fechaSolicitud             DATE,
+    cantidadSolicitada      INT NOT NULL,
+
+    CONSTRAINT pk_solicita PRIMARY KEY (codVino, codSucursal, codCliente, fechaSolicitud),
+    CONSTRAINT fk_solicitud_vino FOREIGN KEY (codVino)
+        REFERENCES VINOS(codVino) -- R2
+    CONSTRAINT fk_solicita_sucursal FOREIGN KEY (codSucursal)
+        REFERENCES SUCURSALES(codSucursal), -- R2
+    CONSTRAINT fk_solicita_cliente FOREIGN KEY (codCliente)
+        REFERENCES SUCURSALES(codCliente), -- R2
+};
 
 ALTER TABLE SUCURSALES
     ADD CONSTRAINT fk_sucursales_director FOREIGN KEY (director)

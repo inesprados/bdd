@@ -1,6 +1,6 @@
 -- Funcion auxiliar para obtener la delegacion a partir de la comunidad autonoma
-/* Mapeo de la comunidadAutonoma a delegación
-     */
+/* Mapeo de la comunidadAutonoma a delegación*/
+
 CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
         IF p_ca IN ('Castilla-León', 'Castilla-La Mancha', 'Aragón', 'Madrid', 'La Rioja') THEN
@@ -15,6 +15,16 @@ CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
             RETURN 'INVALIDA';
         END IF;
     END;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_ControlarSalario
+BEFORE UPDATE OF salario ON EMPLEADOS
+FOR EACH ROW
+BEGIN
+    IF :NEW.salario < OLD.salario THEN
+        RAISE_APPLICATION_ERROR(-20006, 'No se puedo disminuir el salario de un empleado');
+    END IF;
 END;
 /
 
@@ -112,6 +122,25 @@ BEGIN
 END;
 /
 
+-- Disparador para poder eliminar un productor siempre que su produccion de vinos sea cero
+CREATE OR REPLACE TRIGGER trg_validarEliminacionProductor
+BEFORE DELETE ON PRODUCTORES
+FOR EACH ROW
+DECLARE
+    cnt_suministro number;
+BEGIN
+    SELECT COUNT(*) INTO cnt_suministro 
+    FROM SUMINISTRO WHERE codVino IN(
+        SELECT codVino
+        FROM VINOS
+        WHERE codProductor = :OLD.codProductor
+    );
+    IF cnt_suministro > 0 THEN
+        RAISE_APPLICATION_ERROR(-20016, 'No se puede eliminar a este productor');
+    END IF;
+END;
+/
+
 -- Disparador para que una sucursal no pueda hacer pedidos a otra de la misma delegación
 CREATE OR REPLACE TRIGGER trg_pedido_delegacion
 BEFORE INSERT OR UPDATE ON PEDIDO
@@ -133,41 +162,45 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE TRIGGER trigger_ControlarSalario
-BEFORE UPDATE OF salario ON EMPLEADOS
-FOR EACH ROW
-BEGIN
-    IF :NEW.salario < OLD.salario THEN
-        RAISE_APPLICATION_ERROR(-20006, 'No se puedo disminuir el salario de un empleado');
-    END IF;
-END;
-/
 
-/**PREGUNTAR SI HACE FALTA**/
-CREATE OR REPLACE TRIGGER trigger_validarDNI
-BEFORE INSERT OR UPDATE OF DNI ON CLIENTES 
+
+--Disparador para que una sucursal solicite a cualquier sucursal de la delegación correspondiente del vino
+CREATE OR REPLACE TRIGGER trg_controlarPedidosEntreSucursales
+BEFORE INSERT ON PEDIDO
 FOR EACH ROW
 DECLARE
-    cnt_dni number;
-BEGIN
-    IF inserting then
-        select dni into cnt_dni from CLIENTES WHERE dni = :.dni;
-        IF cnt_dni > 0 THEN
-            RAISE_APPLICATION_ERROR(-2001, 'Ese DNI ya está registrado');
-        END IF;
-END;
-/
+    ca_solicitante  SUCURSALES.comunidadAutonoma%TYPE;
+    ca_solicitada   SUCURSALES.comunidadAutonoma%TYPE;
+    ca_vino         VINOS.comunidadAutonoma%TYPE;
 
-CREATE OR REPLACE TRIGGER trigger_validarEliminacionProductor
-BEFORE DELETE ON PRODUCTORES
-FOR EACH ROW
-DECLARE
-    cnt_suministro number;
+    delegacion_distribuye    VARCHAR(50);   --Qué delegación puede distribuir el vino
+    delegacion_solicita      VARCHAR(50);   --Qué delegación solicita el vino
+
 BEGIN
-    select NVL(SUM(cantidadSuministrada),0) into cnt_suministro from SUMINISTRO WHERE codProductor = :old.codProductor;
-    IF cnt_suministro > 0 THEN
-        RAISE_APPLICATION_ERROR(-20016, 'No se puede eliminar a este productor');
-    END IF;
+
+    --Primero obtenemos la comunidad del solicitante
+    SELECT comunidadAutonoma INTO ca_solicitante
+    FROM SUCURSALES 
+    WHERE codSucursal = :NEW.codSucursalSolicitante;
+
+    -- Obtenemos la comunidad autonoma de la sucursal solicitada
+    SELECT comunidadAutonoma INTO ca_solicitada
+    FROM SUCURSALES 
+    WHERE codSucursal = :NEW.codSucursalSolicitada;
+
+    --Obtenemos la comunidad autonoma del vino
+    SELECT comunidadAutonoma INTO ca_vino
+    FROM VINOS 
+    WHERE codVino = :NEW.codVino;
+
+    --CASO 1: el vino pertenece a la misma delegación
+    IF ca_solicitante = ca_vino THEN
+            RAISE_APPLICATION_ERROR(-20019, 'No hace falta pedirlo a otra sucursal, tú puedes administrarlo');
+    END IF ;
+
+    --Averiguamos la delegación que puede distribuir el vino
+   
+
 END;
 /
 

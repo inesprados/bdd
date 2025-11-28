@@ -83,7 +83,7 @@ END;
 /
 
 -- Disparador para comprobar que no haya solicitudes de clientes pendientes para este vino
-CREATE OR REPLACE TRIGGER trg_r15_borrar_vino
+CREATE OR REPLACE TRIGGER trg_borrar_vino
 BEFORE DELETE ON VINOS
 FOR EACH ROW
 DECLARE
@@ -113,7 +113,7 @@ END;
 /
 
 -- Disparador para que una sucursal no pueda hacer pedidos a otra de la misma delegación
-CREATE OR REPLACE TRIGGER trg_r17_pedido_delegacion
+CREATE OR REPLACE TRIGGER trg_pedido_delegacion
 BEFORE INSERT OR UPDATE ON PEDIDO
 FOR EACH ROW
 DECLARE

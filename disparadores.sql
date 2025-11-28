@@ -17,7 +17,7 @@ DECLARE
     cnt_dni number;
 BEGIN
     IF inserting then
-        select dni into cnt_dni from CLIENTES WHERE dni = :new.dni;
+        select dni into cnt_dni from CLIENTES WHERE dni = :.dni;
         IF cnt_dni > 0 THEN
             RAISE_APPLICATION_ERROR(-2001, 'Ese DNI ya está registrado');
         END IF;
@@ -30,6 +30,9 @@ FOR EACH ROW
 DECLARE
     cnt_suministro number;
 BEGIN
-    select cantidadSuministrada
+    select NVL(SUM(cantidadSuministrada),0) into cnt_suministro from SUMINISTRO WHERE codProductor = :old.codProductor;
+    IF cnt_suministro > 0 THEN
+        RAISE_APPLICATION_ERROR(-20016, 'No se puede eliminar a este productor');
+    END IF;
 END;
 /

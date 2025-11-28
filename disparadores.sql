@@ -168,3 +168,62 @@ BEGIN
 END;
 /
 
+/* 
+    Disparadores asociados a la restriccion 18 (no superar el total solicitado por los clientes)
+*/
+
+-- Disparador para actualizar el total solicitado y pedido.
+CREATE OR REPLACE TRIGGER trg_actualizar_techo
+AFTER INSERT OR UPDATE ON SOLICITUD
+FOR EACH ROW
+BEGIN
+    -- Intentamos actualizar sumando la cantidad nueva
+    UPDATE CONTROL_STOCK
+    SET totalSolicitadoCli = totalSolicitadoCli + :NEW.cantidadSolicitada
+    WHERE codSucursal = :NEW.codSucursal 
+      AND codVino = :NEW.codVino;
+
+    -- No encontramos nada (porque es el primer dato), insertamos la fila
+    IF SQL%ROWCOUNT = 0 THEN
+        INSERT INTO CONTROL_STOCK (codSucursal, codVino, totalSolicitadoCli, totalPedidoSuc)
+        VALUES (:NEW.codSucursal, :NEW.codVino, :NEW.cantidadSolicitada, 0);
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_validacion_pedido
+BEFORE INSERT OR UPDATE ON PEDIDO
+FOR EACH ROW
+DECLARE
+    v_techo_maximo   NUMBER := 0;
+    v_consumo_actual NUMBER := 0;
+BEGIN
+    -- Obtenemos los contadores de la tabla auxiliar
+    BEGIN
+        SELECT totalSolicitadoCli, totalPedidoSuc
+            INTO v_techo_maximo, v_consumo_actual
+        FROM CONTROL_STOCK
+            WHERE codSucursal = :NEW.codSucursalSolicitante 
+                AND codVino = :NEW.codVino;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Si no hay registro en CONTROL_STOCK, es que NO hay solicitudes previas.
+            -- Por tanto, el techo es 0.
+            v_techo_maximo := 0;
+            v_consumo_actual := 0;
+    END;
+
+    -- Verificamos que: Lo acumulado + lo nuevo supera al techo
+    IF (v_consumo_actual + :NEW.cantidadPedida) > v_techo_maximo THEN
+        RAISE_APPLICATION_ERROR(-20018, 'Error: Límite excedido. Los clientes solo han pedido ' || v_techo_maximo || 
+                                        ' unidades, pero la sucursal intenta acumular ' || (v_consumo_actual + :NEW.cantidadPedida));
+    END IF;
+
+    -- ACTUALIZAR: Si pasa el control, sumamos el pedido al contador
+    UPDATE CONTROL_STOCK
+    SET totalPedidoSuc = totalPedidoSuc + :NEW.cantidadPedida
+    WHERE codSucursal = :NEW.codSucursalSolicitante 
+      AND codVino = :NEW.codVino;
+
+END;
+/

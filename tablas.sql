@@ -112,4 +112,13 @@ ALTER TABLE SUCURSALES
         REFERENCES EMPLEADOS(codEmpleado); -- R3
 
 
+CREATE TABLE CONTROL_STOCK (
+    codSucursal         VARCHAR(10) NOT NULL,
+    codVino             VARCHAR(10) NOT NULL,
+    totalSolicitadoCli  INT DEFAULT 0, -- Límite máximo
+    totalPedidoSuc      INT DEFAULT 0, -- Consumo actual
 
+    CONSTRAINT pk_control PRIMARY KEY (codSucursal, codVino),
+    CONSTRAINT fk_control_suc FOREIGN KEY (codSucursal) REFERENCES SUCURSALES(codSucursal),
+    CONSTRAINT fk_control_vin FOREIGN KEY (codVino) REFERENCES VINOS(codVino)
+);

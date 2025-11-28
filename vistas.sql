@@ -1,0 +1,3 @@
+/*
+    vistas generadas para cada ciudad
+*/

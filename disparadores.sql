@@ -202,20 +202,23 @@ BEGIN
 END;
 /
 
---Disparador para validar la fecha del pedido de una sucursal S1 a otra S2 de un determinado vino
-CREATE OR REPLACE TRIGGER trg_validarFechaSuministro
+--Disparador para validar la fecha del pedido de una sucursal S1 a otra S2 de un determinado vino y teniendo en cuenta las delegaciones
+CREATE OR REPLACE TRIGGER trg_validarFechaPedido
 BEFORE INSERT OR UPDATE ON PEDIDO
 FOR EACH ROW
 DECLARE
-    v_ultima_fecha   DATE;
+    v_ultima_fecha_sucursal   DATE;
+    v_ultima_fecha_solicitud_cliente   DATE;
 BEGIN
     -- Última fecha de suministro para esta sucursal
-    SELECT MAX(fechaPedido) INTO v_ultima_fecha
+    SELECT MAX(fechaPedido) INTO v_ultima_fecha_sucursal
     FROM PEDIDO
-    WHERE codSucursal = :NEW.codSucursal;
+    WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante   --S1 
+        AND codSucursalSolicitada = :NEW:codSucursalSolicitada   --S2
+        AND codVino = :NEW.codVino;
 
     -- Si la sucursal ya tiene suministros, validamos la fecha
-    IF v_ultima_fecha IS NOT NULL THEN
+    IF v_ultima_fecha_sucursal IS NOT NULL THEN
         IF :NEW.fechaPedido < v_ultima_fecha THEN
             RAISE_APPLICATION_ERROR(-20020, 'Error: La fecha del nuevo suministro (' || 
                                     TO_CHAR(:NEW.fechaPedido, 'DD-MM-YYYY') || 
@@ -227,6 +230,16 @@ BEGIN
      En el caso v_ultima_fecha sea NULL (quiere decir que es su primer suministro), 
      se permite la inserción.
     */
+
 END;
 /
+
+--Disparador 21. La fecha de pedido de un vino de una sucursal S1 a otra S2, tiene que ser posterior a
+la última fecha de solicitud de suministro de ese mismo vino recibida enS1 por un
+cliente. Por ejemplo, si un cliente de Andalucía solicita suministro de vino de Rioja a
+la sucursal S1 en fecha F, y esa solicitud es la última que S1 ha recibido de vino de
+Rioja, el pedido de S1 a la sucursal de la delegación de Madrid correspondiente tiene
+que ser de fecha posterior a F.
+
+
 

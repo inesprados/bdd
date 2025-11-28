@@ -72,7 +72,7 @@ DECLARE
     v_ultima_fecha   DATE;
 BEGIN
     -- Última fecha de suministro para este cliente
-    SELECT MAX(fechaPedido) INTO v_ultima_fecha
+    SELECT MAX(fechaSolicitud) INTO v_ultima_fecha
     FROM SOLICITUD
     WHERE codCliente = :NEW.codCliente;
 
@@ -173,9 +173,6 @@ DECLARE
     ca_solicitada   SUCURSALES.comunidadAutonoma%TYPE;
     ca_vino         VINOS.comunidadAutonoma%TYPE;
 
-    delegacion_distribuye    VARCHAR(50);   --Qué delegación puede distribuir el vino
-    delegacion_solicita      VARCHAR(50);   --Qué delegación solicita el vino
-
 BEGIN
 
     --Primero obtenemos la comunidad del solicitante
@@ -193,14 +190,43 @@ BEGIN
     FROM VINOS 
     WHERE codVino = :NEW.codVino;
 
-    --CASO 1: el vino pertenece a la misma delegación
-    IF ca_solicitante = ca_vino THEN
+    --CASO 1: el vino pertenece a la misma delegacion
+    IF get_delegacion(ca_solicitante) = get_delegacion(ca_vino) THEN
             RAISE_APPLICATION_ERROR(-20019, 'No hace falta pedirlo a otra sucursal, tú puedes administrarlo');
     END IF ;
 
     --Averiguamos la delegación que puede distribuir el vino
-   
+    IF get_delegacion(ca_solicitada) != get_delegacion(ca_vino) THEN
+            RAISE_APPLICATION_ERROR(-20019, 'La sucursal a la que intenta solicitar el vino no puede distribuirlo');
+    END IF;
+END;
+/
 
+--Disparador para validar la fecha del pedido de una sucursal S1 a otra S2 de un determinado vino
+CREATE OR REPLACE TRIGGER trg_validarFechaSuministro
+BEFORE INSERT OR UPDATE ON PEDIDO
+FOR EACH ROW
+DECLARE
+    v_ultima_fecha   DATE;
+BEGIN
+    -- Última fecha de suministro para esta sucursal
+    SELECT MAX(fechaPedido) INTO v_ultima_fecha
+    FROM PEDIDO
+    WHERE codSucursal = :NEW.codSucursal;
+
+    -- Si la sucursal ya tiene suministros, validamos la fecha
+    IF v_ultima_fecha IS NOT NULL THEN
+        IF :NEW.fechaPedido < v_ultima_fecha THEN
+            RAISE_APPLICATION_ERROR(-20020, 'Error: La fecha del nuevo suministro (' || 
+                                    TO_CHAR(:NEW.fechaPedido, 'DD-MM-YYYY') || 
+                                    ') no puede ser anterior al último suministro existente (' || 
+                                    TO_CHAR(v_ultima_fecha, 'DD-MM-YYYY') || ').');
+        END IF;
+    END IF;
+    /*
+     En el caso v_ultima_fecha sea NULL (quiere decir que es su primer suministro), 
+     se permite la inserción.
+    */
 END;
 /
 

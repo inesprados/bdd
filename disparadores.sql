@@ -1,6 +1,6 @@
 -- Funcion auxiliar para obtener la delegacion a partir de la comunidad autonoma
-/* Mapeo de la comunidadAutonoma a delegación
-     */
+/* Mapeo de la comunidadAutonoma a delegación*/
+
 CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
         IF p_ca IN ('Castilla-León', 'Castilla-La Mancha', 'Aragón', 'Madrid', 'La Rioja') THEN
@@ -15,6 +15,16 @@ CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
             RETURN 'INVALIDA';
         END IF;
     END;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_ControlarSalario
+BEFORE UPDATE OF salario ON EMPLEADOS
+FOR EACH ROW
+BEGIN
+    IF :NEW.salario < OLD.salario THEN
+        RAISE_APPLICATION_ERROR(-20006, 'No se puedo disminuir el salario de un empleado');
+    END IF;
 END;
 /
 
@@ -62,7 +72,7 @@ DECLARE
     v_ultima_fecha   DATE;
 BEGIN
     -- Última fecha de suministro para este cliente
-    SELECT MAX(fechaPedido) INTO v_ultima_fecha
+    SELECT MAX(fechaSolicitud) INTO v_ultima_fecha
     FROM SOLICITUD
     WHERE codCliente = :NEW.codCliente;
 
@@ -112,6 +122,25 @@ BEGIN
 END;
 /
 
+-- Disparador para poder eliminar un productor siempre que su produccion de vinos sea cero
+CREATE OR REPLACE TRIGGER trg_validarEliminacionProductor
+BEFORE DELETE ON PRODUCTORES
+FOR EACH ROW
+DECLARE
+    cnt_suministro number;
+BEGIN
+    SELECT COUNT(*) INTO cnt_suministro 
+    FROM SUMINISTRO WHERE codVino IN(
+        SELECT codVino
+        FROM VINOS
+        WHERE codProductor = :OLD.codProductor
+    );
+    IF cnt_suministro > 0 THEN
+        RAISE_APPLICATION_ERROR(-20016, 'No se puede eliminar a este productor');
+    END IF;
+END;
+/
+
 -- Disparador para que una sucursal no pueda hacer pedidos a otra de la misma delegación
 CREATE OR REPLACE TRIGGER trg_pedido_delegacion
 BEFORE INSERT OR UPDATE ON PEDIDO
@@ -133,40 +162,86 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE TRIGGER trigger_ControlarSalario
-BEFORE UPDATE OF salario ON EMPLEADOS
+
+
+--Disparador para que una sucursal solicite a cualquier sucursal de la delegación correspondiente del vino
+CREATE OR REPLACE TRIGGER trg_controlarPedidosEntreSucursales
+BEFORE INSERT ON PEDIDO
 FOR EACH ROW
+DECLARE
+    ca_solicitante  SUCURSALES.comunidadAutonoma%TYPE;
+    ca_solicitada   SUCURSALES.comunidadAutonoma%TYPE;
+    ca_vino         VINOS.comunidadAutonoma%TYPE;
+
 BEGIN
-    IF :NEW.salario < OLD.salario THEN
-        RAISE_APPLICATION_ERROR(-20006, 'No se puedo disminuir el salario de un empleado');
+
+    --Primero obtenemos la comunidad del solicitante
+    SELECT comunidadAutonoma INTO ca_solicitante
+    FROM SUCURSALES 
+    WHERE codSucursal = :NEW.codSucursalSolicitante;
+
+    -- Obtenemos la comunidad autonoma de la sucursal solicitada
+    SELECT comunidadAutonoma INTO ca_solicitada
+    FROM SUCURSALES 
+    WHERE codSucursal = :NEW.codSucursalSolicitada;
+
+    --Obtenemos la comunidad autonoma del vino
+    SELECT comunidadAutonoma INTO ca_vino
+    FROM VINOS 
+    WHERE codVino = :NEW.codVino;
+
+    --CASO 1: el vino pertenece a la misma delegacion
+    IF get_delegacion(ca_solicitante) = get_delegacion(ca_vino) THEN
+            RAISE_APPLICATION_ERROR(-20019, 'No hace falta pedirlo a otra sucursal, tú puedes administrarlo');
+    END IF ;
+
+    --Averiguamos la delegación que puede distribuir el vino
+    IF get_delegacion(ca_solicitada) != get_delegacion(ca_vino) THEN
+            RAISE_APPLICATION_ERROR(-20019, 'La sucursal a la que intenta solicitar el vino no puede distribuirlo');
     END IF;
 END;
 /
 
-/**PREGUNTAR SI HACE FALTA**/
-CREATE OR REPLACE TRIGGER trigger_validarDNI
-BEFORE INSERT OR UPDATE OF DNI ON CLIENTES 
+--Disparador para validar la fecha del pedido de una sucursal S1 a otra S2 de un determinado vino y teniendo en cuenta las delegaciones
+CREATE OR REPLACE TRIGGER trg_validarFechaPedido
+BEFORE INSERT OR UPDATE ON PEDIDO
 FOR EACH ROW
 DECLARE
-    cnt_dni number;
+    v_ultima_fecha_sucursal   DATE;
+    v_ultima_fecha_solicitud_cliente   DATE;
 BEGIN
-    IF inserting then
-        select dni into cnt_dni from CLIENTES WHERE dni = :new.dni;
-        IF cnt_dni > 0 THEN
-            RAISE_APPLICATION_ERROR(-2001, 'Ese DNI ya está registrado');
+    -- Última fecha de suministro para esta sucursal
+    SELECT MAX(fechaPedido) INTO v_ultima_fecha_sucursal
+    FROM PEDIDO
+    WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante   --S1 
+        AND codSucursalSolicitada = :NEW:codSucursalSolicitada   --S2
+        AND codVino = :NEW.codVino;
+
+    -- Si la sucursal ya tiene suministros, validamos la fecha
+    IF v_ultima_fecha_sucursal IS NOT NULL THEN
+        IF :NEW.fechaPedido < v_ultima_fecha THEN
+            RAISE_APPLICATION_ERROR(-20020, 'Error: La fecha del nuevo suministro (' || 
+                                    TO_CHAR(:NEW.fechaPedido, 'DD-MM-YYYY') || 
+                                    ') no puede ser anterior al último suministro existente (' || 
+                                    TO_CHAR(v_ultima_fecha, 'DD-MM-YYYY') || ').');
         END IF;
+    END IF;
+    /*
+     En el caso v_ultima_fecha sea NULL (quiere decir que es su primer suministro), 
+     se permite la inserción.
+    */
+
 END;
 /
 
-CREATE OR REPLACE TRIGGER trigger_validarEliminacionProductor
-BEFORE DELETE ON PRODUCTORES
-FOR EACH ROW
-DECLARE
-    cnt_suministro number;
-BEGIN
-    select cantidadSuministrada
-END;
-/
+--Disparador 21. La fecha de pedido de un vino de una sucursal S1 a otra S2, tiene que ser posterior a
+la última fecha de solicitud de suministro de ese mismo vino recibida enS1 por un
+cliente. Por ejemplo, si un cliente de Andalucía solicita suministro de vino de Rioja a
+la sucursal S1 en fecha F, y esa solicitud es la última que S1 ha recibido de vino de
+Rioja, el pedido de S1 a la sucursal de la delegación de Madrid correspondiente tiene
+que ser de fecha posterior a F.
+
+
 
 /* 
     Disparadores asociados a la restriccion 18 (no superar el total solicitado por los clientes)

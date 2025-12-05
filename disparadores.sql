@@ -214,12 +214,12 @@ BEGIN
     SELECT MAX(fechaPedido) INTO v_ultima_fecha_sucursal
     FROM PEDIDO
     WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante   --S1 
-        AND codSucursalSolicitada = :NEW:codSucursalSolicitada   --S2
+        AND codSucursalSolicitada = :NEW.codSucursalSolicitada   --S2
         AND codVino = :NEW.codVino;
 
     -- Si la sucursal ya tiene suministros, validamos la fecha
     IF v_ultima_fecha_sucursal IS NOT NULL THEN
-        IF :NEW.fechaPedido < v_ultima_fecha THEN
+        IF :NEW.fechaPedido < v_ultima_fecha_sucursal THEN
             RAISE_APPLICATION_ERROR(-20020, 'Error: La fecha del nuevo suministro (' || 
                                     TO_CHAR(:NEW.fechaPedido, 'DD-MM-YYYY') || 
                                     ') no puede ser anterior al último suministro existente (' || 

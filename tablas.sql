@@ -122,3 +122,12 @@ CREATE TABLE CONTROL_STOCK (
     CONSTRAINT fk_control_suc FOREIGN KEY (codSucursal) REFERENCES SUCURSALES(codSucursal),
     CONSTRAINT fk_control_vin FOREIGN KEY (codVino) REFERENCES VINOS(codVino)
 );
+
+CREATE TABLE CONTROL_FECHAS_PEDIDOS{
+    codSucursalSolicitante  VARCHAR(10),
+    codSucursalSolicitada   VARCHAR(10),
+    codVino                 VARCHAR(10),
+    ultimaFechaPedido       DATE,
+
+    CONSTRAINT pk_control_fecha PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino),
+};

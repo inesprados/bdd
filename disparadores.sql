@@ -202,46 +202,6 @@ BEGIN
 END;
 /
 
---Disparador para validar la fecha del pedido de una sucursal S1 a otra S2 de un determinado vino y teniendo en cuenta las delegaciones
-CREATE OR REPLACE TRIGGER trg_validarFechaPedido
-BEFORE INSERT OR UPDATE ON PEDIDO
-FOR EACH ROW
-DECLARE
-    v_ultima_fecha_sucursal   DATE;
-    v_ultima_fecha_solicitud_cliente   DATE;
-BEGIN
-    -- Última fecha de suministro para esta sucursal
-    SELECT MAX(fechaPedido) INTO v_ultima_fecha_sucursal
-    FROM PEDIDO
-    WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante   --S1 
-        AND codSucursalSolicitada = :NEW:codSucursalSolicitada   --S2
-        AND codVino = :NEW.codVino;
-
-    -- Si la sucursal ya tiene suministros, validamos la fecha
-    IF v_ultima_fecha_sucursal IS NOT NULL THEN
-        IF :NEW.fechaPedido < v_ultima_fecha THEN
-            RAISE_APPLICATION_ERROR(-20020, 'Error: La fecha del nuevo suministro (' || 
-                                    TO_CHAR(:NEW.fechaPedido, 'DD-MM-YYYY') || 
-                                    ') no puede ser anterior al último suministro existente (' || 
-                                    TO_CHAR(v_ultima_fecha, 'DD-MM-YYYY') || ').');
-        END IF;
-    END IF;
-    /*
-     En el caso v_ultima_fecha sea NULL (quiere decir que es su primer suministro), 
-     se permite la inserción.
-    */
-
-END;
-/
-
---Disparador 21. La fecha de pedido de un vino de una sucursal S1 a otra S2, tiene que ser posterior a
-la última fecha de solicitud de suministro de ese mismo vino recibida enS1 por un
-cliente. Por ejemplo, si un cliente de Andalucía solicita suministro de vino de Rioja a
-la sucursal S1 en fecha F, y esa solicitud es la última que S1 ha recibido de vino de
-Rioja, el pedido de S1 a la sucursal de la delegación de Madrid correspondiente tiene
-que ser de fecha posterior a F.
-
-
 
 /* 
     Disparadores asociados a la restriccion 18 (no superar el total solicitado por los clientes)
@@ -300,5 +260,86 @@ BEGIN
     WHERE codSucursal = :NEW.codSucursalSolicitante 
       AND codVino = :NEW.codVino;
 
+END;
+/
+
+/* 
+    Disparadores asociados a la restriccion 20 
+*/
+
+CREATE OR REPLACE TRIGGER trg_actualizar_ultima_fecha_pedido
+AFTER INSERT OR UPDATE ON PEDIDO
+FOR EACH ROW
+BEGIN
+    -- Intentamos actualizar si ya existe el registro
+    UPDATE CONTROL_FECHAS_PEDIDO
+    SET ultimaFechaPedido = :NEW.fechaPedido
+    WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante
+      AND codSucursalSolicitada  = :NEW.codSucursalSolicitada
+      AND codVino                = :NEW.codVino;
+
+    -- Si no se actualizó nada, insertamos el registro
+    IF SQL%ROWCOUNT = 0 THEN
+        INSERT INTO CONTROL_FECHAS_PEDIDO
+            (codSucursalSolicitante, codSucursalSolicitada, codVino, ultimaFechaPedido)
+        VALUES
+            (:NEW.codSucursalSolicitante, :NEW.codSucursalSolicitada, :NEW.codVino, :NEW.fechaPedido);
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_validar_ultima_fecha_pedido
+BEFORE INSERT OR UPDATE ON PEDIDO
+FOR EACH ROW
+DECLARE
+    v_ultima_fecha DATE;
+BEGIN
+    BEGIN
+        SELECT ultimaFechaPedido
+        INTO v_ultima_fecha
+        FROM CONTROL_FECHAS_PEDIDO
+        WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante
+          AND codSucursalSolicitada  = :NEW.codSucursalSolicitada
+          AND codVino                = :NEW.codVino;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_ultima_fecha := NULL; -- No hay pedidos previos
+    END;
+
+    -- Validación de la regla 20
+    IF v_ultima_fecha IS NOT NULL AND :NEW.fechaPedido <= v_ultima_fecha THEN
+        RAISE_APPLICATION_ERROR(
+            -20020,
+            'Error: La fecha del pedido debe ser posterior al último pedido entre estas sucursales del mismo vino. ' ||
+            'Última fecha registrada: ' || TO_CHAR(v_ultima_fecha, 'DD/MM/YYYY')
+        );
+    END IF;
+END;
+/
+
+
+/* 
+    Disparadores asociados a la restriccion 21
+*/
+
+CREATE OR REPLACE TRIGGER trg_validarFechaSuministro
+BEFORE INSERT OR UPDATE ON PEDIDO
+FOR EACH ROW
+DECLARE
+    v_ultima_fecha_pedido   DATE;
+BEGIN
+    SELECT MAX(fechaSolicitud) INTO v_ultima_fecha_pedido
+    FROM SOLICITUD WHERE codSucursal = :NEW.codSucursalSolicitante AND codVino = :NEW.codVino;
+
+    IF v_ultima_fecha_pedido IS NOT NULL THEN
+        IF :NEW.fechaPedido <= v_ultima_fecha_pedido THEN
+            RAISE_APPLICATION_ERROR(
+                -20021,
+                'Error: La fecha del pedido (' || TO_CHAR(:NEW.fechaPedido,'DD-MM-YYYY') || 
+                ') debe ser posterior a la última solicitud del cliente (' || 
+                TO_CHAR(v_ultima_fecha_pedido,'DD-MM-YYYY') || ').'
+            );
+        END IF;
+    END IF;
 END;
 /

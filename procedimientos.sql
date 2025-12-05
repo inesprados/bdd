@@ -1,6 +1,21 @@
 /* Practica 4: actualizacion (procedimeintos)
 */
 
+CREATE OR REPLACE FUNCTION get_nodo_destino(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+    IF p_ca IN ('Castilla-León', 'Castilla-La Mancha', 'Aragón', 'Madrid', 'La Rioja') THEN 
+        RETURN 'perro1';
+    ELSIF p_ca IN ('Cataluña', 'Baleares', 'País Valenciano', 'Murcia') THEN 
+        RETURN 'perro2';
+    ELSIF p_ca IN ('Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra') THEN 
+        RETURN 'perro3';
+    ELSIF p_ca IN ('Andalucía', 'Extremadura', 'Canarias', 'Ceuta', 'Melilla') THEN 
+        RETURN 'perro4';
+    ELSE 
+        RETURN 'ERROR';
+    END IF;
+END;
+/
 /* === ALTAS === */
 
 CREATE OR REPLACE PROCEDURE alta_cliente (
@@ -256,3 +271,56 @@ END;
 
 
 /* === MODIFICACIONES === */
+CREATE OR REPLACE PROCEDURE modificar_salario (
+    p_codEmpleado VARCHAR2, 
+    p_nuevoSalario NUMBER
+) IS
+    v_codSucursal VARCHAR2(10);
+    v_ca_sucursal VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+BEGIN
+    -- LOCALIZAR AL EMPLEADO
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal
+        FROM V_EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END;
+
+    -- CALCULAR NODO DESTINO
+    SELECT comunidadAutonoma INTO v_ca_sucursal
+    FROM V_SUCURSALES WHERE codSucursal = v_codSucursal;
+    
+    v_nodo := get_nodo_destino(v_ca_sucursal);
+
+    -- EJECUTAR UPDATE (El Trigger asociado a R6 saltará aquí si se viola la regla)
+    IF v_nodo = 'perro1' THEN
+        UPDATE perro1.EMPLEADOS SET salario = p_nuevoSalario WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro2' THEN
+        UPDATE perro2.EMPLEADOS SET salario = p_nuevoSalario WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro3' THEN
+        UPDATE perro3.EMPLEADOS SET salario = p_nuevoSalario WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro4' THEN
+        UPDATE perro4.EMPLEADOS SET salario = p_nuevoSalario WHERE codEmpleado = p_codEmpleado;
+    END IF;
+
+    -- Validar que se actualizó algo 
+    IF SQL%ROWCOUNT = 0 THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20104, 'Error: No se pudo actualizar el salario (Fila no encontrada en el nodo esperado).');
+    END IF;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        IF SQLCODE = -20006 THEN
+            RAISE_APPLICATION_ERROR(-20006, 'Operación cancelada: El nuevo salario es inferior al actual.');
+        ELSE
+            RAISE;
+        END IF;
+END;
+/

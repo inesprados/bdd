@@ -1,5 +1,258 @@
 /* Practica 4: actualizacion (procedimeintos)
 */
 
+/* === ALTAS === */
+
+CREATE OR REPLACE PROCEDURE alta_cliente (
+    p_codCliente VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, p_tipo VARCHAR2, p_ca VARCHAR2
+) IS
+    v_nodo VARCHAR2(10);
+BEGIN
+    -- Calculo de a qué nodo va
+    v_nodo := get_nodo_destino(p_ca);
+
+    -- Insertar en el sitio correcto
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.CLIENTES VALUES (p_codCliente, p_dni, p_nombre, p_direccion, p_tipo, p_ca);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.CLIENTES VALUES (p_codCliente, p_dni, p_nombre, p_direccion, p_tipo, p_ca);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.CLIENTES VALUES (p_codCliente, p_dni, p_nombre, p_direccion, p_tipo, p_ca);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.CLIENTES VALUES (p_codCliente, p_dni, p_nombre, p_direccion, p_tipo, p_ca);
+    ELSE
+        RAISE_APPLICATION_ERROR(-20301, 'Error: Comunidad Autónoma desconocida.');
+    END IF;
+    
+    COMMIT;
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RAISE_APPLICATION_ERROR(-20302, 'Error: El cliente ya existe.');
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_empleado (
+    p_codEmpleado VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, p_codSucursal VARCHAR2, 
+    p_fechaInicio DATE, p_salario NUMBER
+) IS
+    v_ca_sucursal VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+BEGIN
+    -- Buscamos la CCAA de la sucursal en la VISTA GLOBAL
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_sucursal
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursal;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20101, 'Error: La sucursal destino no existe.');
+    END;
+
+    -- Calculamos el nodo
+    v_nodo := get_nodo_destino(v_ca_sucursal);
+
+    -- Insertamos el empleado en el mismo nodo que su sucursal
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.EMPLEADOS VALUES (p_codEmpleado, p_dni, p_nombre, p_direccion, p_codSucursal, p_fechaInicio, p_salario);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.EMPLEADOS VALUES (p_codEmpleado, p_dni, p_nombre, p_direccion, p_codSucursal, p_fechaInicio, p_salario);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.EMPLEADOS VALUES (p_codEmpleado, p_dni, p_nombre, p_direccion, p_codSucursal, p_fechaInicio, p_salario);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.EMPLEADOS VALUES (p_codEmpleado, p_dni, p_nombre, p_direccion, p_codSucursal, p_fechaInicio, p_salario);
+    END IF;
+
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_actualiza_solicitud (
+    p_codVino VARCHAR2, p_codSucursal VARCHAR2, p_codCliente VARCHAR2,
+    p_fecha DATE, p_cantidad NUMBER
+) IS
+    v_ca_sucursal VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+    v_existe      NUMBER;
+BEGIN
+    -- Buscamos dónde está la sucursal (porque SOLICITUD se guarda con la sucursal)
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_sucursal
+        FROM V_SUCURSALES WHERE codSucursal = p_codSucursal;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20401, 'Sucursal no encontrada');
+    END;
+    
+    v_nodo := get_nodo_destino(v_ca_sucursal);
+
+    -- Verificamos si ya existe la solicitud en la VISTA GLOBAL
+    SELECT COUNT(*) INTO v_existe
+    FROM V_SOLICITUD
+    WHERE codVino = p_codVino AND codSucursal = p_codSucursal 
+      AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+
+    -- Lógica UPDATE o INSERT direccionada al nodo correcto
+    IF v_existe > 0 THEN
+        -- UPDATE 
+        IF v_nodo = 'perro1' THEN
+            UPDATE perro1.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
+            WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+        ELSIF v_nodo = 'perro2' THEN
+            UPDATE perro2.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
+            WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+        ELSIF v_nodo = 'perro3' THEN
+             UPDATE perro3.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
+             WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+        ELSIF v_nodo = 'perro4' THEN
+             UPDATE perro4.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
+             WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+        END IF;
+    ELSE
+        -- INSERT
+        IF v_nodo = 'perro1' THEN INSERT INTO perro1.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo = 'perro2' THEN INSERT INTO perro2.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo = 'perro3' THEN INSERT INTO perro3.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo = 'perro4' THEN INSERT INTO perro4.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        END IF;
+    END IF;
+    
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_pedido (
+    p_suc_solicitante VARCHAR2, p_suc_solicitada VARCHAR2, 
+    p_codVino VARCHAR2, p_fecha DATE, p_cantidad NUMBER
+) IS
+    v_ca_solicitante VARCHAR2(50);
+    v_nodo           VARCHAR2(10);
+BEGIN
+    -- Buscamos dónde está la sucursal solicitante (origen del pedido)
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_solicitante
+        FROM V_SUCURSALES WHERE codSucursal = p_suc_solicitante;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20501, 'Sucursal solicitante no encontrada');
+    END;
+
+    v_nodo := get_nodo_destino(v_ca_solicitante);
+
+    -- Insertamos (Deben saltar los triggers asociados a las restricciones R18, R19, R20, R21)
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.PEDIDO VALUES (p_suc_solicitante, p_suc_solicitada, p_codVino, p_fecha, p_cantidad);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.PEDIDO VALUES (p_suc_solicitante, p_suc_solicitada, p_codVino, p_fecha, p_cantidad);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.PEDIDO VALUES (p_suc_solicitante, p_suc_solicitada, p_codVino, p_fecha, p_cantidad);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.PEDIDO VALUES (p_suc_solicitante, p_suc_solicitada, p_codVino, p_fecha, p_cantidad);
+    END IF;
+
+    COMMIT;
+EXCEPTION
+    -- Capturamos los errores de nuestros triggers
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20500, SQLERRM);
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_productor (
+    p_cod VARCHAR2, p_dni VARCHAR2, p_nom VARCHAR2, p_dir VARCHAR2
+) IS
+BEGIN
+    INSERT INTO perro1.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
+    INSERT INTO perro2.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
+    INSERT INTO perro3.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
+    INSERT INTO perro4.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
+    
+    COMMIT;
+END;
+/
 
 
+
+
+/* === BAJAS === */
+CREATE OR REPLACE PROCEDURE baja_empleado (
+    p_codEmpleado VARCHAR2
+) IS
+    v_codSucursal_trabajo VARCHAR2(10); -- Donde trabaja (para localizarlo)
+    v_codSucursal_dirige  VARCHAR2(10); -- La que dirige (si es director)
+    v_ca_sucursal         VARCHAR2(50);
+    v_nodo_empleado       VARCHAR2(10);
+    v_nodo_director       VARCHAR2(10);
+BEGIN
+    -- LOCALIZAR AL EMPLEADO (sucursal donde trabaja)
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal_trabajo
+        FROM V_EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END;
+
+    -- CALCULAR NODO DEL EMPLEADO 
+    SELECT comunidadAutonoma INTO v_ca_sucursal
+    FROM V_SUCURSALES WHERE codSucursal = v_codSucursal_trabajo;
+    
+    v_nodo_empleado := get_nodo_destino(v_ca_sucursal);
+
+    -- GESTIÓN DE DIRECTOR
+    -- Buscamos en la vista global si su código aparece en la columna 'director'
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal_dirige
+        FROM V_SUCURSALES
+        WHERE director = p_codEmpleado;
+        
+        -- Si encontramos algo, calculamos dónde está esa sucursal
+        SELECT comunidadAutonoma INTO v_ca_sucursal
+        FROM V_SUCURSALES WHERE codSucursal = v_codSucursal_dirige;
+        
+        v_nodo_director := get_nodo_destino(v_ca_sucursal);
+
+        -- Ponemos a NULL el campo director en el nodo correspondiente
+        IF v_nodo_director = 'perro1' THEN
+            UPDATE perro1.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+        ELSIF v_nodo_director = 'perro2' THEN
+            UPDATE perro2.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+        ELSIF v_nodo_director = 'perro3' THEN
+            UPDATE perro3.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+        ELSIF v_nodo_director = 'perro4' THEN
+            UPDATE perro4.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+        END IF;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            NULL; -- No es director, no hacemos nada y continuamos.
+    END;
+
+    -- BORRAR EMPLEADO 
+    IF v_nodo_empleado = 'perro1' THEN
+        DELETE FROM perro1.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo_empleado = 'perro2' THEN
+        DELETE FROM perro2.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo_empleado = 'perro3' THEN
+        DELETE FROM perro3.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo_empleado = 'perro4' THEN
+        DELETE FROM perro4.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+    END IF;
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20103, 'Error al dar de baja: ' || SQLERRM);
+END;
+/
+
+
+
+
+
+
+
+
+
+/* === MODIFICACIONES === */

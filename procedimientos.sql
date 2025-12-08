@@ -190,7 +190,7 @@ CREATE OR REPLACE PROCEDURE alta_sucursal (
     p_comunidadAutonoma VARCHAR2, p_codEmpleado VARCHAR2 DEFAULT NULL
 ) IS
     v_count NUMBER;
-    v_ca_sucursal VARCHAR2(50);
+    v_nodo  VARCHAR2(20);
 BEGIN
     SELECT count(*) INTO v_count FROM SUCURSALES
     WHERE codSucursal = p_codSucursal;
@@ -199,18 +199,17 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20030, 'Ya existe una sucursal con ese codigo' || p_codSucursal);
     END IF;
 
-    -- Buscamos la CCAA de la sucursal en la VISTA GLOBAL
-    BEGIN
-        SELECT comunidadAutonoma INTO v_ca_sucursal
-        FROM V_SUCURSALES
-        WHERE codSucursal = p_codSucursal;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20101, 'Error: La sucursal destino no existe.');
-    END;
+    IF p_codEmpleado IS NOT NULL THEN
+        SELECT count(*) INTO v_count FROM EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+
+        IF v_count = 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'El empleado' || p_codEmpleado || ' no está registrado');
+        END IF;
+    END IF;
 
     -- Calculamos el nodo
-    v_nodo := get_nodo_destino(v_ca_sucursal);
+    v_nodo := get_nodo_destino(p_comunidadAutonoma);
 
  -- Insertamos la sucursal en el mismo nodo 
     IF v_nodo = 'perro1' THEN

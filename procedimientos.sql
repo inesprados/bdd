@@ -613,3 +613,57 @@ BEGIN
 
 END;
 /
+
+
+CREATE OR REPLACE PROCEDURE asignar_director (
+    p_codSucursal VARCHAR2,
+    p_codEmpleado VARCHAR2
+) IS
+    v_comunidadAutonoma VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+    v_count INTEGER;
+    
+BEGIN
+
+   -- LOCALIZAR AL EMPLEADO
+    SELECT count(*) INTO v_count
+    FROM V_EMPLEADOS
+    WHERE codEmpleado = p_codEmpleado;
+
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END IF;
+
+    SELECT count(*) INTO v_count
+    FROM V_SUCURSALES
+    WHERE director = p_codEmpleado;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20103, 'Error: El empleado ya el director de una sucursal.');
+    END IF;
+    
+    BEGIN
+        SELECT comunidadAutonoma INTO v_comunidadAutonoma
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursal;
+     EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20104, 'Error: La sucursal no existe.');
+    END;
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    IF v_nodo = 'perro1' THEN
+        UPDATE perro1.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro2' THEN
+        UPDATE perro2.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro3' THEN
+        UPDATE perro3.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro4' THEN
+        UPDATE perro4.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    END IF;
+
+    COMMIT;
+
+END;
+/

@@ -94,6 +94,10 @@ BEGIN
     END IF;
 
     COMMIT;
+
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado ya existe.');
 END;
 /
 
@@ -104,52 +108,92 @@ CREATE OR REPLACE PROCEDURE alta_actualiza_solicitud (
     p_fecha DATE, 
     p_cantidad NUMBER
 ) IS
-    v_ca_sucursal VARCHAR2(50);
-    v_nodo        VARCHAR2(10);
-    v_existe      NUMBER;
+    v_ca_sucursal  VARCHAR2(50);
+    v_ca_vino      VARCHAR2(50);
+    v_nodo_sucursal VARCHAR2(10);
+    v_nodo_vino     VARCHAR2(10);
+    v_existe       NUMBER;
+    v_stock_actual NUMBER;
 BEGIN
-    -- Buscamos dónde está la sucursal (porque SOLICITUD se guarda con la sucursal)
+    -- LOCALIZAR NODOS
+    -- Nodo de la Sucursal (Para guardar la solicitud)
     BEGIN
-        SELECT comunidadAutonoma INTO v_ca_sucursal
-        FROM V_SUCURSALES WHERE codSucursal = p_codSucursal;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20401, 'Sucursal no encontrada');
+        SELECT comunidadAutonoma INTO v_ca_sucursal FROM V_SUCURSALES WHERE codSucursal = p_codSucursal;
+    EXCEPTION WHEN NO_DATA_FOUND THEN 
+        RAISE_APPLICATION_ERROR(-20401, 'Sucursal no encontrada'); 
     END;
     
-    v_nodo := get_nodo_destino(v_ca_sucursal);
+    v_nodo_sucursal := get_nodo_destino(v_ca_sucursal);
 
-    -- Verificamos si ya existe la solicitud en la VISTA GLOBAL
-    SELECT COUNT(*) INTO v_existe
-    FROM V_SOLICITUD
-    WHERE codVino = p_codVino AND codSucursal = p_codSucursal 
-      AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+    -- Nodo del Vino (Para actualizar el stock)
+    BEGIN
+        SELECT comunidadAutonoma, cantidadStock INTO v_ca_vino, v_stock_actual 
+        FROM V_VINOS WHERE codVino = p_codVino;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN 
+            RAISE_APPLICATION_ERROR(-20402, 'Vino no encontrado'); 
+    END;
 
-    -- Lógica UPDATE o INSERT direccionada al nodo correcto
+    v_nodo_vino := get_nodo_destino(v_ca_vino);
+
+    -- VERIFICAR STOCK 
+    IF v_stock_actual < p_cantidad THEN
+        RAISE_APPLICATION_ERROR(-20403, 'Stock insuficiente. Disponibles: ' || v_stock_actual || ', Solicitadas: ' || p_cantidad);
+    END IF;
+
+    -- GESTIONAR SOLICITUD (UPDATE o INSERT)
+    SELECT COUNT(*) INTO v_existe FROM V_SOLICITUD
+    WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+
     IF v_existe > 0 THEN
-        -- UPDATE 
-        IF v_nodo = 'perro1' THEN
-            UPDATE perro1.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
-            WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
-        ELSIF v_nodo = 'perro2' THEN
-            UPDATE perro2.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
-            WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
-        ELSIF v_nodo = 'perro3' THEN
-             UPDATE perro3.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
-             WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
-        ELSIF v_nodo = 'perro4' THEN
-             UPDATE perro4.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad
-             WHERE codVino = p_codVino AND codSucursal = p_codSucursal AND codCliente = p_codCliente AND fechaSolicitud = p_fecha;
+        -- UPDATE (Sumamos cantidad)
+        IF v_nodo_sucursal = 'perro1' THEN 
+            UPDATE perro1.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad 
+            WHERE codVino=p_codVino AND codSucursal=p_codSucursal AND codCliente=p_codCliente AND fechaSolicitud=p_fecha;
+        ELSIF v_nodo_sucursal = 'perro2' THEN 
+            UPDATE perro2.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad 
+            WHERE codVino=p_codVino AND codSucursal=p_codSucursal AND codCliente=p_codCliente AND fechaSolicitud=p_fecha;
+        ELSIF v_nodo_sucursal = 'perro3' THEN 
+            UPDATE perro3.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad 
+            WHERE codVino=p_codVino AND codSucursal=p_codSucursal AND codCliente=p_codCliente AND fechaSolicitud=p_fecha;
+        ELSIF v_nodo_sucursal = 'perro4' THEN 
+            UPDATE perro4.SOLICITUD SET cantidadSolicitada = cantidadSolicitada + p_cantidad 
+            WHERE codVino=p_codVino AND codSucursal=p_codSucursal AND codCliente=p_codCliente AND fechaSolicitud=p_fecha;
         END IF;
     ELSE
         -- INSERT
-        IF v_nodo = 'perro1' THEN INSERT INTO perro1.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
-        ELSIF v_nodo = 'perro2' THEN INSERT INTO perro2.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
-        ELSIF v_nodo = 'perro3' THEN INSERT INTO perro3.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
-        ELSIF v_nodo = 'perro4' THEN INSERT INTO perro4.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        IF v_nodo_sucursal = 'perro1' THEN 
+            INSERT INTO perro1.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo_sucursal = 'perro2' THEN 
+            INSERT INTO perro2.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo_sucursal = 'perro3' THEN 
+            INSERT INTO perro3.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
+        ELSIF v_nodo_sucursal = 'perro4' THEN 
+            INSERT INTO perro4.SOLICITUD VALUES (p_codVino, p_codCliente, p_codSucursal, p_fecha, p_cantidad);
         END IF;
     END IF;
+
+    -- ACTUALIZAR STOCK 
+    IF v_nodo_vino = 'perro1' THEN 
+        UPDATE perro1.VINOS SET cantidadStock = cantidadStock - p_cantidad WHERE codVino = p_codVino;
+    ELSIF v_nodo_vino = 'perro2' THEN 
+        UPDATE perro2.VINOS SET cantidadStock = cantidadStock - p_cantidad WHERE codVino = p_codVino;
+    ELSIF v_nodo_vino = 'perro3' THEN 
+        UPDATE perro3.VINOS SET cantidadStock = cantidadStock - p_cantidad WHERE codVino = p_codVino;
+    ELSIF v_nodo_vino = 'perro4' THEN 
+        UPDATE perro4.VINOS SET cantidadStock = cantidadStock - p_cantidad WHERE codVino = p_codVino;
+    END IF;
     
+    IF SQL%ROWCOUNT = 0 THEN 
+        RAISE_APPLICATION_ERROR(-20404, 'Error crítico: No se pudo actualizar el stock.'); 
+    END IF;
+
     COMMIT;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20405, 'Error en solicitud: ' || SQLERRM);
 END;
 /
 
@@ -188,7 +232,7 @@ BEGIN
 EXCEPTION
     -- Capturamos los errores de nuestros triggers
     WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20500, SQLERRM);
+        RAISE_APPLICATION_ERROR(-20500, 'Error en alta pedido: ' || SQLERRM);
 END;
 /
 
@@ -205,6 +249,11 @@ BEGIN
     INSERT INTO perro4.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
     
     COMMIT;
+
+EXCEPTION
+    ROLLBACK;
+    WHEN DUP_VAL_ON_INDEX THEN
+        RAISE_APPLICATION_ERROR(-20202, 'Error: El productor ya existe.');
 END;
 /
 
@@ -250,6 +299,9 @@ BEGIN
 
     COMMIT;
 
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RAISE_APPLICATION_ERROR(-20031, 'Error: La sucursal ya existe.');
 
 END;
 /
@@ -313,7 +365,9 @@ BEGIN
 
     COMMIT;
 
-    
+EXCEPTION
+    WHEN DUP_VAL_ON_INDEX THEN
+        RAISE_APPLICATION_ERROR(-20031, 'Error: El vino ya existe.');
 END;
 /
 

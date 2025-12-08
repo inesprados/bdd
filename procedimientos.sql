@@ -196,7 +196,7 @@ BEGIN
     WHERE codSucursal = p_codSucursal;
 
     IF v_count > 0 THEN
-        RAISE_APPLICATION_ERROR(-20030, 'Ya existe una sucursal con ese codigo' || p_codSucursal);
+        RAISE_APPLICATION_ERROR(-20030, 'Ya existe una sucursal con ese codigo ' || p_codSucursal);
     END IF;
 
     IF p_codEmpleado IS NOT NULL THEN
@@ -204,7 +204,7 @@ BEGIN
         WHERE codEmpleado = p_codEmpleado;
 
         IF v_count = 0 THEN
-            RAISE_APPLICATION_ERROR(-20030, 'El empleado' || p_codEmpleado || ' no está registrado');
+            RAISE_APPLICATION_ERROR(-20030, 'El empleado ' || p_codEmpleado || ' no está registrado');
         END IF;
     END IF;
 
@@ -225,6 +225,63 @@ BEGIN
     COMMIT;
 
 
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_vino (
+    p_codVino VARCHAR2, p_marca VARCHAR2, p_anioCosecha DATE,
+    p_denominacionOrigen VARCHAR2 DEFAULT NULL, p_graduacion DOUBLE, p_viniedoProcedencia VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, p_cantidadProducida INTEGER, p_codProductor VARCHAR2
+) IS
+    v_count NUMBER;
+    v_nodo  VARCHAR2(20);
+BEGIN
+    SELECT count(*) INTO v_count FROM VINOS
+    WHERE codVino = p_codVino;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'Ya existe un vino con ese codigo ' || p_codVino);
+    END IF;
+
+    SELECT count(*) INTO v_count FROM PRODUCTORES
+    WHERE codProductor = p_codProductor;
+
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'No tenemos a ese productor registrado ' || p_codProductor);
+    END IF;
+
+    IF p_cantidadProducidad <= 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'No se puede registrar un vino sin producción inicial ' || p_cantidadProducida);
+    END IF;
+
+    IF p_graduacion < 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'La graduacion de un vino no puede ser negativa ' || p_graduacion);
+    END IF;
+
+    IF p_anioCosecha > SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20030, 'El año de cosecha no puede ser del futuro ' || p_anioCosecha);
+    END IF;
+
+
+    v_nodo := get_nodo_destino(p_comunidadAutonoma);
+
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    END IF;
+
+    COMMIT;
+
+    
 END;
 /
 

@@ -16,7 +16,13 @@ BEGIN
     END IF;
 END;
 /
-/* === ALTAS === */
+/* 
+
+
+=== ALTAS === 
+
+
+*/
 
 CREATE OR REPLACE PROCEDURE alta_cliente (
     p_codCliente VARCHAR2, 
@@ -312,7 +318,18 @@ END;
 /
 
 
-/* === BAJAS === */
+
+/* 
+
+
+    === BAJAS === 
+
+
+
+*/
+
+
+
 CREATE OR REPLACE PROCEDURE baja_empleado (
     p_codEmpleado VARCHAR2
 ) IS
@@ -386,14 +403,148 @@ EXCEPTION
 END;
 /
 
+
+CREATE OR REPLACE PROCEDURE baja_solicitud (
+    p_codCliente VARCHAR2,
+    p_codSucursal VARCHAR2,
+    p_codVino VARCHAR2,
+    p_fechaSolicitud DATE DEFAULT NULL 
+) IS
+    v_ca_sucursal VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+BEGIN
+    -- Localizar nodo 
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_sucursal
+        FROM V_SUCURSALES WHERE codSucursal = p_codSucursal;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20401, 'Sucursal no encontrada');
+    END;
+    
+    v_nodo := get_nodo_destino(v_ca_sucursal);
+
+    IF v_nodo = 'perro1' THEN
+        IF p_fechaSolicitud IS NOT NULL THEN
+            DELETE FROM perro1.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino AND fechaSolicitud=p_fechaSolicitud;
+        ELSE
+            DELETE FROM perro1.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro2' THEN
+        IF p_fechaSolicitud IS NOT NULL THEN
+            DELETE FROM perro2.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino AND fechaSolicitud=p_fechaSolicitud;
+        ELSE
+            DELETE FROM perro2.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro3' THEN
+        IF p_fechaSolicitud IS NOT NULL THEN
+            DELETE FROM perro3.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino AND fechaSolicitud=p_fechaSolicitud;
+        ELSE
+            DELETE FROM perro3.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro4' THEN
+        IF p_fechaSolicitud IS NOT NULL THEN
+            DELETE FROM perro4.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino AND fechaSolicitud=p_fechaSolicitud;
+        ELSE
+            DELETE FROM perro4.SOLICITUD 
+            WHERE codCliente=p_codCliente AND codSucursal=p_codSucursal AND codVino=p_codVino;
+        END IF;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20404, 'No se encontraron solicitudes para borrar.');
+    END IF;
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20405, 'Error al borrar solicitud: ' || SQLERRM);
+END;
+/
+
+CREATE OR REPLACE PROCEDURE baja_pedido (
+    p_suc_solicitante VARCHAR2,
+    p_suc_solicitada VARCHAR2,
+    p_codVino VARCHAR2,
+    p_fechaPedido DATE DEFAULT NULL
+) IS
+    v_ca_solicitante VARCHAR2(50);
+    v_nodo           VARCHAR2(10);
+BEGIN
+    -- Localizar nodo (sucursal solicitante)
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_solicitante
+        FROM V_SUCURSALES WHERE codSucursal = p_suc_solicitante;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20501, 'Sucursal solicitante no encontrada');
+    END;
+
+    v_nodo := get_nodo_destino(v_ca_solicitante);
+
+    -- Borrado
+    IF v_nodo = 'perro1' THEN
+        IF p_fechaPedido IS NOT NULL THEN
+            DELETE FROM perro1.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino AND fechaPedido=p_fechaPedido;
+        ELSE
+            DELETE FROM perro1.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro2' THEN
+        IF p_fechaPedido IS NOT NULL THEN
+            DELETE FROM perro2.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino AND fechaPedido=p_fechaPedido;
+        ELSE
+            DELETE FROM perro2.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro3' THEN
+        IF p_fechaPedido IS NOT NULL THEN
+            DELETE FROM perro3.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino AND fechaPedido=p_fechaPedido;
+        ELSE
+            DELETE FROM perro3.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino;
+        END IF;
+    ELSIF v_nodo = 'perro4' THEN
+        IF p_fechaPedido IS NOT NULL THEN
+            DELETE FROM perro4.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino AND fechaPedido=p_fechaPedido;
+        ELSE
+            DELETE FROM perro4.PEDIDO 
+            WHERE codSucursalSolicitante=p_suc_solicitante AND codSucursalSolicitada=p_suc_solicitada AND codVino=p_codVino;
+        END IF;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20504, 'No se encontraron pedidos para borrar.');
+    END IF;
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20505, 'Error al borrar pedido: ' || SQLERRM);
+END;
+/
+
+
 CREATE OR REPLACE PROCEDURE baja_vino (
     p_codVino VARCHAR2
 ) IS
     v_nodo          VARCHAR2(20);
-    v_cantidadStock INTEGER;
+    v_cantidadStock INTEGER; -- elimnarlo igual <<<<<<<<<<<<<<<<<--------------------
     v_comunidadAutonoma VARCHAR2(30);
 BEGIN
     --LOCALIZAR VINO
+    -- ¡¡¡ ELIMINAR cantidadStock si quitamos la comprobacion del stock !!!!!!   <<<<<<<<<<<<<<<<<--------------------
     BEGIN
         SELECT cantidadStock, comunidadAutonoma INTO v_cantidadStock, v_comunidadAutonoma
         FROM V_VINOS
@@ -403,6 +554,8 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20102, 'Error: El vino no existe.');
     END;
 
+
+    -- !!! POSIBLE ELIMINAICON YA QUE CON EL TRIGGER DE BAJA VINO LO HACEMOS AUTOMATICO !!! <<<<<<<<<<<<<<<<<--------------------
     IF v_cantidadStock > 0 THEN
             RAISE_APPLICATION_ERROR(-20103, 'Error: El vino no se puede eliminar pues queda stock.');
     END IF;
@@ -426,7 +579,7 @@ BEGIN
             'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
     END IF;
 
-    COMMIT;
+    COMMIT;           --- ¡¡¡¡ ELIMINARLO SI TIENE SENTIDO YA QUE SI NO HABRIA PROBLEMAS CON baja_productor !!!   <<<<<<<<<<<<<<<<<--------------------
 
 EXCEPTION
     WHEN OTHERS THEN
@@ -462,33 +615,23 @@ BEGIN
                 -- Propagamos el error con un mensaje claro
                 RAISE_APPLICATION_ERROR(
                     -20106,
-                    'Error al eliminar el vino ' || v.codVino || ': ' || SQLERRM
+                    'Error al eliminar el productor debido al borrado de su vino ' || v.codVino || ': ' || SQLERRM
                 );
         END;
     END LOOP;
 
     -- BORRAR PRODUCOTR
-    IF v_nodo = 'perro1' THEN
-        DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
-    ELSIF v_nodo = 'perro2' THEN
-        DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
-    ELSIF v_nodo = 'perro3' THEN
-        DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
-    ELSIF v_nodo = 'perro4' THEN
-        DELETE FROM perro4.PRODUCTORES WHERE codProductor = p_codProductor;
-    END IF;
-
-    IF SQL%ROWCOUNT = 0 THEN
-        RAISE_APPLICATION_ERROR(-20104,
-            'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
-    END IF;
+    DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
+    DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
+    DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
+    DELETE FROM perro4.PRODUCTORES WHERE codProductor = p_codProductor;
 
     COMMIT;
 
 EXCEPTION
     WHEN OTHERS THEN
     ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el vino: ' || SQLERRM); 
+        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el productor: ' || SQLERRM); 
 END;
 /
 
@@ -498,7 +641,16 @@ END;
 
 
 
-/* === MODIFICACIONES === */
+
+/* 
+
+
+=== MODIFICACIONES === 
+
+
+*/
+
+
 CREATE OR REPLACE PROCEDURE modificar_salario (
     p_codEmpleado VARCHAR2, 
     p_nuevoSalario NUMBER
@@ -553,6 +705,10 @@ EXCEPTION
 END;
 /
 
+
+/* ============================ OPCIONES PARA traladar_empleado ================================ */
+
+/* ====== primera version sin modificar =================== */
 
 CREATE OR REPLACE PROCEDURE trasladar_empleado (
     p_codEmpleado VARCHAR2, 
@@ -613,6 +769,110 @@ BEGIN
 
 END;
 /
+
+/* ========================= Otra version para traladar empleado ================================= */
+CREATE OR REPLACE PROCEDURE trasladar_empleado (
+    p_codEmpleado VARCHAR2, 
+    p_codSucursalNueva VARCHAR2,
+    p_direccionNueva VARCHAR2 DEFAULT NULL
+) IS
+    -- Datos del empleado
+    v_dni VARCHAR2(15);
+    v_nombre VARCHAR2(100);
+    v_fechaInicio DATE;
+    v_salario NUMBER;
+    v_dir_actual VARCHAR2(200);
+    v_direccion_final VARCHAR2(200);
+
+    -- Datos de ubicación
+    v_codSucursalAntigua VARCHAR2(10);
+    v_ca_antigua VARCHAR2(50);
+    v_ca_nueva   VARCHAR2(50);
+    v_nodo_antiguo VARCHAR2(10);
+    v_nodo_nuevo   VARCHAR2(10);
+BEGIN
+    -- OBTENER DATOS ACTUALES DEL EMPLEADO (Necesarios por si hay que moverlo de localidad)
+    BEGIN
+        SELECT DNI, nombre, fechaComienzoContrato, salario, direccion, codSucursal
+        INTO v_dni, v_nombre, v_fechaInicio, v_salario, v_dir_actual, v_codSucursalAntigua
+        FROM V_EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END;
+
+    v_direccion_final := p_direccionNueva; 
+
+    -- CALCULAR NODO ANTIGUO
+    SELECT comunidadAutonoma INTO v_ca_antigua FROM V_SUCURSALES WHERE codSucursal = v_codSucursalAntigua;
+    v_nodo_antiguo := get_nodo_destino(v_ca_antigua);
+
+    -- CALCULAR NODO NUEVO
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_nueva FROM V_SUCURSALES WHERE codSucursal = p_codSucursalNueva;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20102, 'Error: La nueva sucursal no existe.');
+    END;
+    v_nodo_nuevo := get_nodo_destino(v_ca_nueva);
+
+    -- TRASLADO
+    IF v_nodo_antiguo = v_nodo_nuevo THEN
+        -- CASO A: MISMO NODO (Solo Update)
+        IF v_nodo_antiguo = 'perro1' THEN
+            UPDATE perro1.EMPLEADOS SET codSucursal = p_codSucursalNueva, direccion = v_direccion_final WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro2' THEN
+            UPDATE perro2.EMPLEADOS SET codSucursal = p_codSucursalNueva, direccion = v_direccion_final WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro3' THEN
+            UPDATE perro3.EMPLEADOS SET codSucursal = p_codSucursalNueva, direccion = v_direccion_final WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro4' THEN
+            UPDATE perro4.EMPLEADOS SET codSucursal = p_codSucursalNueva, direccion = v_direccion_final WHERE codEmpleado = p_codEmpleado;
+        END IF;
+    ELSE
+        -- CASO B: CAMBIO DE LOCALIDAD y por lo tanto debemos cambiar el nodo (Delete + Insert)
+        
+        -- Borrar del antiguo (actualizo tambien aqui si es director y poner a null ese campo)
+        IF v_nodo_antiguo = 'perro1' THEN 
+            UPDATE perro1.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+            DELETE FROM perro1.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro2' THEN 
+            UPDATE perro2.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+            DELETE FROM perro2.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro3' THEN 
+            UPDATE perro3.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+            DELETE FROM perro3.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+        ELSIF v_nodo_antiguo = 'perro4' THEN 
+            UPDATE perro4.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
+            DELETE FROM perro4.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
+        END IF;
+
+        -- Insertar en el nuevo  (tambien se puede hacer usando alta_empleado, pero consideramos esta como la mejor opcion)
+        IF v_nodo_nuevo = 'perro1' THEN 
+            INSERT INTO perro1.EMPLEADOS VALUES (p_codEmpleado, v_dni, v_nombre, v_direccion_final, p_codSucursalNueva, v_fechaInicio, v_salario);
+        ELSIF v_nodo_nuevo = 'perro2' THEN 
+            INSERT INTO perro2.EMPLEADOS VALUES (p_codEmpleado, v_dni, v_nombre, v_direccion_final, p_codSucursalNueva, v_fechaInicio, v_salario);
+        ELSIF v_nodo_nuevo = 'perro3' THEN 
+            INSERT INTO perro3.EMPLEADOS VALUES (p_codEmpleado, v_dni, v_nombre, v_direccion_final, p_codSucursalNueva, v_fechaInicio, v_salario);
+        ELSIF v_nodo_nuevo = 'perro4' THEN 
+            INSERT INTO perro4.EMPLEADOS VALUES (p_codEmpleado, v_dni, v_nombre, v_direccion_final, p_codSucursalNueva, v_fechaInicio, v_salario);
+        END IF;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+         --  En caso de migración (delete+insert), rowcount refleja el insert final, que es 1.
+         ROLLBACK;
+         RAISE_APPLICATION_ERROR(-20104, 'Error interno: No se pudo completar el traslado.');
+    END IF;
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20105, 'Error al trasladar empleado: ' || SQLERRM);
+END;
+/
+
+/* ==============================FIN VERSIONES traladar_empleado ============================= */
 
 
 CREATE OR REPLACE PROCEDURE asignar_director (

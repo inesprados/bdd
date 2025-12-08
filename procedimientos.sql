@@ -19,8 +19,12 @@ END;
 /* === ALTAS === */
 
 CREATE OR REPLACE PROCEDURE alta_cliente (
-    p_codCliente VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
-    p_direccion VARCHAR2, p_tipo VARCHAR2, p_ca VARCHAR2
+    p_codCliente VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, 
+    p_tipo VARCHAR2, 
+    p_ca VARCHAR2
 ) IS
     v_nodo VARCHAR2(10);
 BEGIN
@@ -48,9 +52,13 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_empleado (
-    p_codEmpleado VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
-    p_direccion VARCHAR2, p_codSucursal VARCHAR2, 
-    p_fechaInicio DATE, p_salario NUMBER
+    p_codEmpleado VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, 
+    p_codSucursal VARCHAR2, 
+    p_fechaInicio DATE, 
+    p_salario NUMBER
 ) IS
     v_ca_sucursal VARCHAR2(50);
     v_nodo        VARCHAR2(10);
@@ -84,8 +92,11 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_actualiza_solicitud (
-    p_codVino VARCHAR2, p_codSucursal VARCHAR2, p_codCliente VARCHAR2,
-    p_fecha DATE, p_cantidad NUMBER
+    p_codVino VARCHAR2, 
+    p_codSucursal VARCHAR2, 
+    p_codCliente VARCHAR2,
+    p_fecha DATE, 
+    p_cantidad NUMBER
 ) IS
     v_ca_sucursal VARCHAR2(50);
     v_nodo        VARCHAR2(10);
@@ -137,8 +148,11 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_pedido (
-    p_suc_solicitante VARCHAR2, p_suc_solicitada VARCHAR2, 
-    p_codVino VARCHAR2, p_fecha DATE, p_cantidad NUMBER
+    p_suc_solicitante VARCHAR2, 
+    p_suc_solicitada VARCHAR2, 
+    p_codVino VARCHAR2, 
+    p_fecha DATE, 
+    p_cantidad NUMBER
 ) IS
     v_ca_solicitante VARCHAR2(50);
     v_nodo           VARCHAR2(10);
@@ -173,7 +187,10 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_productor (
-    p_cod VARCHAR2, p_dni VARCHAR2, p_nom VARCHAR2, p_dir VARCHAR2
+    p_cod VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nom VARCHAR2, 
+    p_dir VARCHAR2
 ) IS
 BEGIN
     INSERT INTO perro1.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
@@ -186,8 +203,11 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_sucursal (
-    p_codSucursal VARCHAR2, p_nombre VARCHAR2, p_ciudad VARCHAR2,
-    p_comunidadAutonoma VARCHAR2, p_codEmpleado VARCHAR2 DEFAULT NULL
+    p_codSucursal VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_ciudad VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, 
+    p_codEmpleado VARCHAR2 DEFAULT NULL
 ) IS
     v_count NUMBER;
     v_nodo  VARCHAR2(20);
@@ -229,9 +249,15 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_vino (
-    p_codVino VARCHAR2, p_marca VARCHAR2, p_anioCosecha DATE,
-    p_denominacionOrigen VARCHAR2 DEFAULT NULL, p_graduacion DOUBLE, p_viniedoProcedencia VARCHAR2,
-    p_comunidadAutonoma VARCHAR2, p_cantidadProducida INTEGER, p_codProductor VARCHAR2
+    p_codVino VARCHAR2,
+    p_marca VARCHAR2, 
+    p_anioCosecha DATE,
+    p_denominacionOrigen VARCHAR2 DEFAULT NULL, 
+    p_graduacion DOUBLE, 
+    p_viniedoProcedencia VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, 
+    p_cantidadProducida INTEGER, 
+    p_codProductor VARCHAR2
 ) IS
     v_count NUMBER;
     v_nodo  VARCHAR2(20);
@@ -420,5 +446,66 @@ EXCEPTION
         ELSE
             RAISE;
         END IF;
+END;
+/
+
+
+CREATE OR REPLACE PROCEDURE trasladar_empleado (
+    p_codEmpleado VARCHAR2, 
+    p_codSucursalNueva VARCHAR2,
+    p_direccionNueva VARCHAR2 DEFAULT NULL
+) IS
+    v_codSucursal VARCHAR2(10);
+    v_ca_sucursalNueva VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+    v_fechaInicio   DATE;
+    v_sueldo        DECIMAL;
+BEGIN
+    -- LOCALIZAR AL EMPLEADO
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal
+        FROM V_EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END;
+
+    -- LOCALIZAR NUEVA SUCURSAL
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursalNueva;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: La nueva sucursal no existe.');
+    END;
+
+
+    -- CALCULAR NODO DESTINO
+    SELECT comunidadAutonoma INTO v_ca_sucursalNueva
+    FROM V_SUCURSALES WHERE codSucursal = p_codSucursalNueva;
+    
+    v_nodo := get_nodo_destino(v_ca_sucursalNueva);
+
+
+    IF v_nodo = 'perro1' THEN
+        UPDATE perro1.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro2' THEN
+        UPDATE perro2.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro3' THEN
+        UPDATE perro3.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro4' THEN
+        UPDATE perro4.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    END IF;
+
+    -- Validar que se actualizó algo 
+    IF SQL%ROWCOUNT = 0 THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20104, 'Error: No se pudo cambiar al empleado de sucursal.');
+    END IF;
+
+    COMMIT;
+
 END;
 /

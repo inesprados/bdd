@@ -170,7 +170,49 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE alta_sucursal (
+    p_codSucursal VARCHAR2, p_nombre VARCHAR2, p_ciudad VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, p_codEmpleado VARCHAR2 DEFAULT NULL
+) IS
+    v_count NUMBER;
+    v_ca_sucursal VARCHAR2(50);
+BEGIN
+    SELECT count(*) INTO v_count FROM SUCURSALES
+    WHERE codSucursal = p_codSucursal;
 
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'Ya existe una sucursal con ese codigo' || p_codSucursal);
+    END IF;
+
+    -- Buscamos la CCAA de la sucursal en la VISTA GLOBAL
+    BEGIN
+        SELECT comunidadAutonoma INTO v_ca_sucursal
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursal;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20101, 'Error: La sucursal destino no existe.');
+    END;
+
+    -- Calculamos el nodo
+    v_nodo := get_nodo_destino(v_ca_sucursal);
+
+ -- Insertamos la sucursal en el mismo nodo 
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    END IF;
+
+    COMMIT;
+
+
+END;
+/
 
 
 /* === BAJAS === */

@@ -382,11 +382,58 @@ BEGIN
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20103, 'Error al dar de baja: ' || SQLERRM);
+        RAISE_APPLICATION_ERROR(-20103, 'Error al dar de baja al empleado: ' || SQLERRM);
 END;
 /
 
+CREATE OR REPLACE PROCEDURE baja_vino (
+    p_codVino VARCHAR2
+) IS
+    v_nodo          VARCHAR2(20);
+    v_cantidadStock INTEGER;
+    v_comunidadAutonoma VARCHAR2(30);
+BEGIN
+    --LOCALIZAR VINO
+    BEGIN
+        SELECT cantidadStock, comunidadAutonoma INTO v_cantidadStock, v_comunidadAutonoma
+        FROM V_VINOS
+        WHERE codVino = p_codVino;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El vino no existe.');
+    END;
 
+    IF v_cantidadStock > 0 THEN
+            RAISE_APPLICATION_ERROR(-20103, 'Error: El vino no se puede eliminar pues queda stock.');
+    END IF;
+
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    -- BORRAR VINO 
+    IF v_nodo = 'perro1' THEN
+        DELETE FROM perro1.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro2' THEN
+        DELETE FROM perro2.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro3' THEN
+        DELETE FROM perro3.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro4' THEN
+        DELETE FROM perro4.VINOS WHERE codVino = p_codVino;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20104,
+            'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
+    END IF;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el vino: ' || SQLERRM); 
+END;
+/
 
 
 

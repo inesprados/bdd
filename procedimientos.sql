@@ -435,6 +435,63 @@ EXCEPTION
 END;
 /
 
+CREATE OR REPLACE PROCEDURE baja_productor (
+    p_codProductor VARCHAR2
+) IS
+    v_nodo          VARCHAR2(20);
+    v_comunidadAutonoma VARCHAR2(30);
+BEGIN
+    --SABER SI EXISTE EL PRODUCTOR
+    BEGIN
+        SELECT comunidadAutonoma INTO v_comunidadAutonoma
+        FROM V_PRODUCTORES
+        WHERE codProductor = p_codProductor;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El productor no existe.');
+    END;  
+
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    FOR v IN (SELECT codVino FROM V_VINOS WHERE codProductor = p_codProductor) LOOP
+        BEGIN
+            baja_vino(v.codVino);
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- Propagamos el error con un mensaje claro
+                RAISE_APPLICATION_ERROR(
+                    -20106,
+                    'Error al eliminar el vino ' || v.codVino || ': ' || SQLERRM
+                );
+        END;
+    END LOOP;
+
+    -- BORRAR PRODUCOTR
+    IF v_nodo = 'perro1' THEN
+        DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro2' THEN
+        DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro3' THEN
+        DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro4' THEN
+        DELETE FROM perro4.PRODUCTORES WHERE codProductor = p_codProductor;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20104,
+            'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
+    END IF;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el vino: ' || SQLERRM); 
+END;
+/
+
 
 
 

@@ -19,8 +19,12 @@ END;
 /* === ALTAS === */
 
 CREATE OR REPLACE PROCEDURE alta_cliente (
-    p_codCliente VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
-    p_direccion VARCHAR2, p_tipo VARCHAR2, p_ca VARCHAR2
+    p_codCliente VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, 
+    p_tipo VARCHAR2, 
+    p_ca VARCHAR2
 ) IS
     v_nodo VARCHAR2(10);
 BEGIN
@@ -48,9 +52,13 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_empleado (
-    p_codEmpleado VARCHAR2, p_dni VARCHAR2, p_nombre VARCHAR2, 
-    p_direccion VARCHAR2, p_codSucursal VARCHAR2, 
-    p_fechaInicio DATE, p_salario NUMBER
+    p_codEmpleado VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_direccion VARCHAR2, 
+    p_codSucursal VARCHAR2, 
+    p_fechaInicio DATE, 
+    p_salario NUMBER
 ) IS
     v_ca_sucursal VARCHAR2(50);
     v_nodo        VARCHAR2(10);
@@ -84,8 +92,11 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_actualiza_solicitud (
-    p_codVino VARCHAR2, p_codSucursal VARCHAR2, p_codCliente VARCHAR2,
-    p_fecha DATE, p_cantidad NUMBER
+    p_codVino VARCHAR2, 
+    p_codSucursal VARCHAR2, 
+    p_codCliente VARCHAR2,
+    p_fecha DATE, 
+    p_cantidad NUMBER
 ) IS
     v_ca_sucursal VARCHAR2(50);
     v_nodo        VARCHAR2(10);
@@ -137,8 +148,11 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_pedido (
-    p_suc_solicitante VARCHAR2, p_suc_solicitada VARCHAR2, 
-    p_codVino VARCHAR2, p_fecha DATE, p_cantidad NUMBER
+    p_suc_solicitante VARCHAR2, 
+    p_suc_solicitada VARCHAR2, 
+    p_codVino VARCHAR2, 
+    p_fecha DATE, 
+    p_cantidad NUMBER
 ) IS
     v_ca_solicitante VARCHAR2(50);
     v_nodo           VARCHAR2(10);
@@ -173,7 +187,10 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE alta_productor (
-    p_cod VARCHAR2, p_dni VARCHAR2, p_nom VARCHAR2, p_dir VARCHAR2
+    p_cod VARCHAR2, 
+    p_dni VARCHAR2, 
+    p_nom VARCHAR2, 
+    p_dir VARCHAR2
 ) IS
 BEGIN
     INSERT INTO perro1.PRODUCTORES VALUES (p_cod, p_dni, p_nom, p_dir);
@@ -185,7 +202,114 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE alta_sucursal (
+    p_codSucursal VARCHAR2, 
+    p_nombre VARCHAR2, 
+    p_ciudad VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, 
+    p_codEmpleado VARCHAR2 DEFAULT NULL
+) IS
+    v_count NUMBER;
+    v_nodo  VARCHAR2(20);
+BEGIN
+    SELECT count(*) INTO v_count FROM SUCURSALES
+    WHERE codSucursal = p_codSucursal;
 
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'Ya existe una sucursal con ese codigo ' || p_codSucursal);
+    END IF;
+
+    IF p_codEmpleado IS NOT NULL THEN
+        SELECT count(*) INTO v_count FROM EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+
+        IF v_count = 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'El empleado ' || p_codEmpleado || ' no está registrado');
+        END IF;
+    END IF;
+
+    -- Calculamos el nodo
+    v_nodo := get_nodo_destino(p_comunidadAutonoma);
+
+ -- Insertamos la sucursal en el mismo nodo 
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.SUCURSALES VALUES (p_codSucursal, p_nombre, p_ciudad, p_comunidadAutonoma, p_codEmpleado, NULL);
+    END IF;
+
+    COMMIT;
+
+
+END;
+/
+
+CREATE OR REPLACE PROCEDURE alta_vino (
+    p_codVino VARCHAR2,
+    p_marca VARCHAR2, 
+    p_anioCosecha DATE,
+    p_denominacionOrigen VARCHAR2 DEFAULT NULL, 
+    p_graduacion DOUBLE, 
+    p_viniedoProcedencia VARCHAR2,
+    p_comunidadAutonoma VARCHAR2, 
+    p_cantidadProducida INTEGER, 
+    p_codProductor VARCHAR2
+) IS
+    v_count NUMBER;
+    v_nodo  VARCHAR2(20);
+BEGIN
+    SELECT count(*) INTO v_count FROM VINOS
+    WHERE codVino = p_codVino;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'Ya existe un vino con ese codigo ' || p_codVino);
+    END IF;
+
+    SELECT count(*) INTO v_count FROM PRODUCTORES
+    WHERE codProductor = p_codProductor;
+
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20030, 'No tenemos a ese productor registrado ' || p_codProductor);
+    END IF;
+
+    IF p_cantidadProducidad <= 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'No se puede registrar un vino sin producción inicial ' || p_cantidadProducida);
+    END IF;
+
+    IF p_graduacion < 0 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'La graduacion de un vino no puede ser negativa ' || p_graduacion);
+    END IF;
+
+    IF p_anioCosecha > SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20030, 'El año de cosecha no puede ser del futuro ' || p_anioCosecha);
+    END IF;
+
+
+    v_nodo := get_nodo_destino(p_comunidadAutonoma);
+
+    IF v_nodo = 'perro1' THEN
+        INSERT INTO perro1.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro2' THEN
+        INSERT INTO perro2.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro3' THEN
+        INSERT INTO perro3.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    ELSIF v_nodo = 'perro4' THEN
+        INSERT INTO perro4.VINOS VALUES (p_codVino, p_codProductor, p_marca, p_anioCosecha, p_denominacionOrigen, p_graduacion, 
+                                        p_viniedoProcedencia, p_comunidadAutonoma, p_cantidadProducida, p_cantidadProducida);
+    END IF;
+
+    COMMIT;
+
+    
+END;
+/
 
 
 /* === BAJAS === */
@@ -258,11 +382,115 @@ BEGIN
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20103, 'Error al dar de baja: ' || SQLERRM);
+        RAISE_APPLICATION_ERROR(-20103, 'Error al dar de baja al empleado: ' || SQLERRM);
 END;
 /
 
+CREATE OR REPLACE PROCEDURE baja_vino (
+    p_codVino VARCHAR2
+) IS
+    v_nodo          VARCHAR2(20);
+    v_cantidadStock INTEGER;
+    v_comunidadAutonoma VARCHAR2(30);
+BEGIN
+    --LOCALIZAR VINO
+    BEGIN
+        SELECT cantidadStock, comunidadAutonoma INTO v_cantidadStock, v_comunidadAutonoma
+        FROM V_VINOS
+        WHERE codVino = p_codVino;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El vino no existe.');
+    END;
 
+    IF v_cantidadStock > 0 THEN
+            RAISE_APPLICATION_ERROR(-20103, 'Error: El vino no se puede eliminar pues queda stock.');
+    END IF;
+
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    -- BORRAR VINO 
+    IF v_nodo = 'perro1' THEN
+        DELETE FROM perro1.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro2' THEN
+        DELETE FROM perro2.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro3' THEN
+        DELETE FROM perro3.VINOS WHERE codVino = p_codVino;
+    ELSIF v_nodo = 'perro4' THEN
+        DELETE FROM perro4.VINOS WHERE codVino = p_codVino;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20104,
+            'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
+    END IF;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el vino: ' || SQLERRM); 
+END;
+/
+
+CREATE OR REPLACE PROCEDURE baja_productor (
+    p_codProductor VARCHAR2
+) IS
+    v_nodo          VARCHAR2(20);
+    v_comunidadAutonoma VARCHAR2(30);
+BEGIN
+    --SABER SI EXISTE EL PRODUCTOR
+    BEGIN
+        SELECT comunidadAutonoma INTO v_comunidadAutonoma
+        FROM V_PRODUCTORES
+        WHERE codProductor = p_codProductor;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El productor no existe.');
+    END;  
+
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    FOR v IN (SELECT codVino FROM V_VINOS WHERE codProductor = p_codProductor) LOOP
+        BEGIN
+            baja_vino(v.codVino);
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- Propagamos el error con un mensaje claro
+                RAISE_APPLICATION_ERROR(
+                    -20106,
+                    'Error al eliminar el vino ' || v.codVino || ': ' || SQLERRM
+                );
+        END;
+    END LOOP;
+
+    -- BORRAR PRODUCOTR
+    IF v_nodo = 'perro1' THEN
+        DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro2' THEN
+        DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro3' THEN
+        DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
+    ELSIF v_nodo = 'perro4' THEN
+        DELETE FROM perro4.PRODUCTORES WHERE codProductor = p_codProductor;
+    END IF;
+
+    IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20104,
+            'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
+    END IF;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el vino: ' || SQLERRM); 
+END;
+/
 
 
 
@@ -322,5 +550,120 @@ EXCEPTION
         ELSE
             RAISE;
         END IF;
+END;
+/
+
+
+CREATE OR REPLACE PROCEDURE trasladar_empleado (
+    p_codEmpleado VARCHAR2, 
+    p_codSucursalNueva VARCHAR2,
+    p_direccionNueva VARCHAR2 DEFAULT NULL
+) IS
+    v_codSucursal VARCHAR2(10);
+    v_ca_sucursalNueva VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+    v_fechaInicio   DATE;
+    v_sueldo        DECIMAL;
+BEGIN
+    -- LOCALIZAR AL EMPLEADO
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal
+        FROM V_EMPLEADOS
+        WHERE codEmpleado = p_codEmpleado;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END;
+
+    -- LOCALIZAR NUEVA SUCURSAL
+    BEGIN
+        SELECT codSucursal INTO v_codSucursal
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursalNueva;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20102, 'Error: La nueva sucursal no existe.');
+    END;
+
+
+    -- CALCULAR NODO DESTINO
+    SELECT comunidadAutonoma INTO v_ca_sucursalNueva
+    FROM V_SUCURSALES WHERE codSucursal = p_codSucursalNueva;
+    
+    v_nodo := get_nodo_destino(v_ca_sucursalNueva);
+
+
+    IF v_nodo = 'perro1' THEN
+        UPDATE perro1.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro2' THEN
+        UPDATE perro2.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro3' THEN
+        UPDATE perro3.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    ELSIF v_nodo = 'perro4' THEN
+        UPDATE perro4.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
+    END IF;
+
+    -- Validar que se actualizó algo 
+    IF SQL%ROWCOUNT = 0 THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20104, 'Error: No se pudo cambiar al empleado de sucursal.');
+    END IF;
+
+    COMMIT;
+
+END;
+/
+
+
+CREATE OR REPLACE PROCEDURE asignar_director (
+    p_codSucursal VARCHAR2,
+    p_codEmpleado VARCHAR2
+) IS
+    v_comunidadAutonoma VARCHAR2(50);
+    v_nodo        VARCHAR2(10);
+    v_count INTEGER;
+    
+BEGIN
+
+   -- LOCALIZAR AL EMPLEADO
+    SELECT count(*) INTO v_count
+    FROM V_EMPLEADOS
+    WHERE codEmpleado = p_codEmpleado;
+
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
+    END IF;
+
+    SELECT count(*) INTO v_count
+    FROM V_SUCURSALES
+    WHERE director = p_codEmpleado;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20103, 'Error: El empleado ya el director de una sucursal.');
+    END IF;
+    
+    BEGIN
+        SELECT comunidadAutonoma INTO v_comunidadAutonoma
+        FROM V_SUCURSALES
+        WHERE codSucursal = p_codSucursal;
+     EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20104, 'Error: La sucursal no existe.');
+    END;
+
+    v_nodo := get_nodo_destino(v_comunidadAutonoma);
+
+    IF v_nodo = 'perro1' THEN
+        UPDATE perro1.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro2' THEN
+        UPDATE perro2.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro3' THEN
+        UPDATE perro3.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    ELSIF v_nodo = 'perro4' THEN
+        UPDATE perro4.SUCURSALES SET director = p_CodEmpleado WHERE codSucursal = p_codSucursal;
+    END IF;
+
+    COMMIT;
+
 END;
 /

@@ -594,25 +594,17 @@ CREATE OR REPLACE PROCEDURE baja_vino (
     p_codVino VARCHAR2
 ) IS
     v_nodo          VARCHAR2(20);
-    v_cantidadStock INTEGER; -- elimnarlo igual <<<<<<<<<<<<<<<<<--------------------
     v_comunidadAutonoma VARCHAR2(30);
 BEGIN
     --LOCALIZAR VINO
-    -- ¡¡¡ ELIMINAR cantidadStock si quitamos la comprobacion del stock !!!!!!   <<<<<<<<<<<<<<<<<--------------------
     BEGIN
-        SELECT cantidadStock, comunidadAutonoma INTO v_cantidadStock, v_comunidadAutonoma
+        SELECT comunidadAutonoma INTO v_comunidadAutonoma
         FROM V_VINOS
         WHERE codVino = p_codVino;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20102, 'Error: El vino no existe.');
     END;
-
-
-    -- !!! POSIBLE ELIMINAICON YA QUE CON EL TRIGGER DE BAJA VINO LO HACEMOS AUTOMATICO !!! <<<<<<<<<<<<<<<<<--------------------
-    IF v_cantidadStock > 0 THEN
-            RAISE_APPLICATION_ERROR(-20103, 'Error: El vino no se puede eliminar pues queda stock.');
-    END IF;
 
 
     v_nodo := get_nodo_destino(v_comunidadAutonoma);
@@ -633,7 +625,6 @@ BEGIN
             'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
     END IF;
 
-    COMMIT;           --- ¡¡¡¡ ELIMINARLO SI TIENE SENTIDO YA QUE SI NO HABRIA PROBLEMAS CON baja_productor !!!   <<<<<<<<<<<<<<<<<--------------------
 
 EXCEPTION
     WHEN OTHERS THEN
@@ -674,7 +665,7 @@ BEGIN
         END;
     END LOOP;
 
-    -- BORRAR PRODUCOTR
+    -- BORRAR PRODUCTOR
     DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
     DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
     DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
@@ -760,71 +751,6 @@ END;
 /
 
 
-/* ============================ OPCIONES PARA traladar_empleado ================================ */
-
-/* ====== primera version sin modificar =================== */
-
-CREATE OR REPLACE PROCEDURE trasladar_empleado (
-    p_codEmpleado VARCHAR2, 
-    p_codSucursalNueva VARCHAR2,
-    p_direccionNueva VARCHAR2 DEFAULT NULL
-) IS
-    v_codSucursal VARCHAR2(10);
-    v_ca_sucursalNueva VARCHAR2(50);
-    v_nodo        VARCHAR2(10);
-    v_fechaInicio   DATE;
-    v_sueldo        DECIMAL;
-BEGIN
-    -- LOCALIZAR AL EMPLEADO
-    BEGIN
-        SELECT codSucursal INTO v_codSucursal
-        FROM V_EMPLEADOS
-        WHERE codEmpleado = p_codEmpleado;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20102, 'Error: El empleado no existe.');
-    END;
-
-    -- LOCALIZAR NUEVA SUCURSAL
-    BEGIN
-        SELECT codSucursal INTO v_codSucursal
-        FROM V_SUCURSALES
-        WHERE codSucursal = p_codSucursalNueva;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20102, 'Error: La nueva sucursal no existe.');
-    END;
-
-
-    -- CALCULAR NODO DESTINO
-    SELECT comunidadAutonoma INTO v_ca_sucursalNueva
-    FROM V_SUCURSALES WHERE codSucursal = p_codSucursalNueva;
-    
-    v_nodo := get_nodo_destino(v_ca_sucursalNueva);
-
-
-    IF v_nodo = 'perro1' THEN
-        UPDATE perro1.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
-    ELSIF v_nodo = 'perro2' THEN
-        UPDATE perro2.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
-    ELSIF v_nodo = 'perro3' THEN
-        UPDATE perro3.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
-    ELSIF v_nodo = 'perro4' THEN
-        UPDATE perro4.EMPLEADOS SET codSucursal = p_CodSucursalNueva, direccion = p_direccionNueva WHERE codEmpleado = p_codEmpleado;
-    END IF;
-
-    -- Validar que se actualizó algo 
-    IF SQL%ROWCOUNT = 0 THEN
-        ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20104, 'Error: No se pudo cambiar al empleado de sucursal.');
-    END IF;
-
-    COMMIT;
-
-END;
-/
-
-/* ========================= Otra version para traladar empleado ================================= */
 CREATE OR REPLACE PROCEDURE trasladar_empleado (
     p_codEmpleado VARCHAR2, 
     p_codSucursalNueva VARCHAR2,
@@ -844,6 +770,9 @@ CREATE OR REPLACE PROCEDURE trasladar_empleado (
     v_ca_nueva   VARCHAR2(50);
     v_nodo_antiguo VARCHAR2(10);
     v_nodo_nuevo   VARCHAR2(10);
+    
+    v_codSucursalNueva VARCHAR2(50);
+    
 BEGIN
     -- OBTENER DATOS ACTUALES DEL EMPLEADO (Necesarios por si hay que moverlo de localidad)
     BEGIN
@@ -857,6 +786,7 @@ BEGIN
     END;
 
     v_direccion_final := p_direccionNueva; 
+
 
     -- CALCULAR NODO ANTIGUO
     SELECT comunidadAutonoma INTO v_ca_antigua FROM V_SUCURSALES WHERE codSucursal = v_codSucursalAntigua;
@@ -925,8 +855,6 @@ EXCEPTION
         RAISE_APPLICATION_ERROR(-20105, 'Error al trasladar empleado: ' || SQLERRM);
 END;
 /
-
-/* ==============================FIN VERSIONES traladar_empleado ============================= */
 
 
 CREATE OR REPLACE PROCEDURE asignar_director (

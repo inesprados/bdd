@@ -251,9 +251,11 @@ BEGIN
     COMMIT;
 
 EXCEPTION
-    ROLLBACK;
     WHEN DUP_VAL_ON_INDEX THEN
         RAISE_APPLICATION_ERROR(-20202, 'Error: El productor ya existe.');
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
 END;
 /
 
@@ -311,7 +313,7 @@ CREATE OR REPLACE PROCEDURE alta_vino (
     p_marca VARCHAR2, 
     p_anioCosecha DATE,
     p_denominacionOrigen VARCHAR2 DEFAULT NULL, 
-    p_graduacion DOUBLE, 
+    p_graduacion NUMBER, 
     p_viniedoProcedencia VARCHAR2,
     p_comunidadAutonoma VARCHAR2, 
     p_cantidadProducida INTEGER, 
@@ -637,25 +639,24 @@ END;
 CREATE OR REPLACE PROCEDURE baja_productor (
     p_codProductor VARCHAR2
 ) IS
-    v_nodo          VARCHAR2(20);
-    v_comunidadAutonoma VARCHAR2(30);
+    v_count NUMBER;
 BEGIN
-    --SABER SI EXISTE EL PRODUCTOR
-    BEGIN
-        SELECT comunidadAutonoma INTO v_comunidadAutonoma
-        FROM V_PRODUCTORES
-        WHERE codProductor = p_codProductor;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20102, 'Error: El productor no existe.');
-    END;  
+    -- SABER SI EXISTE EL PRODUCTOR (Usando count en la vista global)
+    SELECT COUNT(*) INTO v_count
+    FROM V_PRODUCTORES
+    WHERE codProductor = p_codProductor;
 
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20102, 'Error: El productor no existe.');
+    END IF;
+
+    -- BORRADO DE VINOS (en los 4 nodos)
     DELETE FROM perro1.VINOS WHERE codProductor = p_codProductor;
     DELETE FROM perro2.VINOS WHERE codProductor = p_codProductor;
     DELETE FROM perro3.VINOS WHERE codProductor = p_codProductor;
     DELETE FROM perro4.VINOS WHERE codProductor = p_codProductor;
 
-    -- BORRAR PRODUCTOR
+    -- BORRAR PRODUCTOR (en los 4 nodos)
     DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;
     DELETE FROM perro2.PRODUCTORES WHERE codProductor = p_codProductor;
     DELETE FROM perro3.PRODUCTORES WHERE codProductor = p_codProductor;
@@ -665,8 +666,13 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-    ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el productor: ' || SQLERRM); 
+        ROLLBACK;
+        -- Si es un error de nuestros triggers (ej. tiene vinos con ventas), lo mostramos
+        IF SQLCODE BETWEEN -20999 AND -20000 THEN
+             RAISE;
+        ELSE
+             RAISE_APPLICATION_ERROR(-20105, 'Error al dar de baja el productor: ' || SQLERRM); 
+        END IF;
 END;
 /
 

@@ -17,7 +17,7 @@ CREATE TABLE SUCURSALES (
     director            VARCHAR2(10),
     codCliente          VARCHAR2(10),
 
-    CONSTRAINT uq_sucursales_director UNIQUE (director)  -- R4
+    CONSTRAINT uq_sucursales_director UNIQUE (director),  -- R4
     CONSTRAINT fk_sucursal_cliente FOREIGN KEY (codCliente)
         REFERENCES CLIENTES(codCliente) 
 );
@@ -51,14 +51,14 @@ CREATE TABLE VINOS(
     marca               VARCHAR2(20) NOT NULL,
     anioCosecha         DATE NOT NULL,
     denominacionOrigen  VARCHAR2(30) NOT NULL,
-    graduacion          DOUBLE NOT NULL,
+    graduacion          NUMBER(5, 2) NOT NULL,
     viniedoProcedencia  VARCHAR2(30) NOT NULL,
     comunidadAutonoma   VARCHAR2(30) NOT NULL,
     cantidadProducida   INTEGER NOT NULL CHECK (cantidadProducida>=0),
     cantidadStock       INTEGER NOT NULL,
 
     CONSTRAINT fk_productor FOREIGN KEY (codProductor)
-        REFERENCES PRODUCTORES(codProductor)
+        REFERENCES PRODUCTORES(codProductor),
     CONSTRAINT chk_stock CHECK (cantidadStock >= 0 AND cantidadStock <= cantidadProducida) -- R14
 );
 
@@ -91,7 +91,7 @@ CREATE TABLE PEDIDO (
         REFERENCES VINOS(codVino) -- R2
 );
 
-CREATE TABLE SOLICITUD {
+CREATE TABLE SOLICITUD (
     codVino                 VARCHAR2(10),
     codCliente              VARCHAR2(10),
     codSucursal             VARCHAR2(10),
@@ -100,16 +100,12 @@ CREATE TABLE SOLICITUD {
 
     CONSTRAINT pk_solicita PRIMARY KEY (codVino, codSucursal, codCliente, fechaSolicitud),
     CONSTRAINT fk_solicitud_vino FOREIGN KEY (codVino)
-        REFERENCES VINOS(codVino) -- R2
+        REFERENCES VINOS(codVino), -- R2
     CONSTRAINT fk_solicita_sucursal FOREIGN KEY (codSucursal)
         REFERENCES SUCURSALES(codSucursal), -- R2
     CONSTRAINT fk_solicita_cliente FOREIGN KEY (codCliente)
-        REFERENCES SUCURSALES(codCliente), -- R2
-};
-
-ALTER TABLE SUCURSALES
-    ADD CONSTRAINT fk_sucursales_director FOREIGN KEY (director)
-        REFERENCES EMPLEADOS(codEmpleado); -- R3
+        REFERENCES CLIENTES(codCliente) -- R2
+);
 
 
 CREATE TABLE CONTROL_STOCK (
@@ -123,11 +119,13 @@ CREATE TABLE CONTROL_STOCK (
     CONSTRAINT fk_control_vin FOREIGN KEY (codVino) REFERENCES VINOS(codVino)
 );
 
-CREATE TABLE CONTROL_FECHAS_PEDIDOS{
+CREATE TABLE CONTROL_FECHAS_PEDIDOS(
     codSucursalSolicitante  VARCHAR2(10),
     codSucursalSolicitada   VARCHAR2(10),
     codVino                 VARCHAR2(10),
     ultimaFechaPedido       DATE,
 
-    CONSTRAINT pk_control_fecha PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino),
-};
+    CONSTRAINT pk_control_fecha PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino)
+);
+
+COMMIT;

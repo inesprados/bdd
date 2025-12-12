@@ -275,7 +275,7 @@ BEGIN
     END IF;
 
     IF p_codEmpleado IS NOT NULL THEN
-        SELECT count(*) INTO v_count FROM EMPLEADOS
+        SELECT count(*) INTO v_count FROM V_EMPLEADOS
         WHERE codEmpleado = p_codEmpleado;
 
         IF v_count = 0 THEN
@@ -320,21 +320,21 @@ CREATE OR REPLACE PROCEDURE alta_vino (
     v_count NUMBER;
     v_nodo  VARCHAR2(20);
 BEGIN
-    SELECT count(*) INTO v_count FROM VINOS
+    SELECT count(*) INTO v_count FROM V_VINOS
     WHERE codVino = p_codVino;
 
     IF v_count > 0 THEN
         RAISE_APPLICATION_ERROR(-20030, 'Ya existe un vino con ese codigo ' || p_codVino);
     END IF;
 
-    SELECT count(*) INTO v_count FROM PRODUCTORES
+    SELECT count(*) INTO v_count FROM V_PRODUCTORES
     WHERE codProductor = p_codProductor;
 
     IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20030, 'No tenemos a ese productor registrado ' || p_codProductor);
     END IF;
 
-    IF p_cantidadProducidad <= 0 THEN
+    IF p_cantidadProducida <= 0 THEN
             RAISE_APPLICATION_ERROR(-20030, 'No se puede registrar un vino sin producción inicial ' || p_cantidadProducida);
     END IF;
 
@@ -805,18 +805,13 @@ BEGIN
     ELSE
         -- CASO B: CAMBIO DE LOCALIDAD y por lo tanto debemos cambiar el nodo (Delete + Insert)
         
-        -- Borrar del antiguo (actualizo tambien aqui si es director y poner a null ese campo)
         IF v_nodo_antiguo = 'perro1' THEN 
-            UPDATE perro1.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
             DELETE FROM perro1.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
         ELSIF v_nodo_antiguo = 'perro2' THEN 
-            UPDATE perro2.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
             DELETE FROM perro2.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
         ELSIF v_nodo_antiguo = 'perro3' THEN 
-            UPDATE perro3.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
             DELETE FROM perro3.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
         ELSIF v_nodo_antiguo = 'perro4' THEN 
-            UPDATE perro4.SUCURSALES SET director = NULL WHERE director = p_codEmpleado;
             DELETE FROM perro4.EMPLEADOS WHERE codEmpleado = p_codEmpleado;
         END IF;
 

@@ -54,7 +54,7 @@ CREATE TABLE VINOS(
     graduacion          DOUBLE NOT NULL,
     viniedoProcedencia  VARCHAR2(30) NOT NULL,
     comunidadAutonoma   VARCHAR2(30) NOT NULL,
-    cantidadProducida   INTEGER NOT NULL CHECK (cantidadProducidad>=0),
+    cantidadProducida   INTEGER NOT NULL CHECK (cantidadProducida>=0),
     cantidadStock       INTEGER NOT NULL,
 
     CONSTRAINT fk_productor FOREIGN KEY (codProductor)

@@ -18,18 +18,38 @@ CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
 END;
 /
 
+
+-- R3: El director de una sucursal es empleado de la compañía (no tiene que ser empleado de la sucursal)
+CREATE OR REPLACE TRIGGER trg_check_director_global
+BEFORE INSERT OR UPDATE OF director ON SUCURSALES
+FOR EACH ROW
+WHEN (NEW.director IS NOT NULL)
+DECLARE
+    v_existe NUMBER;
+BEGIN
+    -- Buscamos al empleado en la VISTA GLOBAL (Cualquier nodo)
+    SELECT COUNT(*) INTO v_existe
+    FROM V_EMPLEADOS
+    WHERE codEmpleado = :NEW.director;
+
+    IF v_existe = 0 THEN
+        RAISE_APPLICATION_ERROR(-20040, 'Error: El empleado ' || :NEW.director || ' no existe en ninguna delegación.');
+    END IF;
+END;
+/
+
 CREATE OR REPLACE TRIGGER trg_ControlarSalario
 BEFORE UPDATE OF salario ON EMPLEADOS
 FOR EACH ROW
 BEGIN
-    IF :NEW.salario < OLD.salario THEN
+    IF :NEW.salario < :OLD.salario THEN
         RAISE_APPLICATION_ERROR(-20006, 'No se puedo disminuir el salario de un empleado');
     END IF;
 END;
 /
 
 CREATE OR REPLACE TRIGGER trg_check_delegacion_suministro
-BEFORE INSERT OR UPDATE ON SUMINISTRO
+BEFORE INSERT OR UPDATE ON SOLICITUD
 FOR EACH ROW
 DECLARE
     v_ca_cliente    CLIENTES.comunidadAutonoma%TYPE;
@@ -272,7 +292,7 @@ AFTER INSERT OR UPDATE ON PEDIDO
 FOR EACH ROW
 BEGIN
     -- Intentamos actualizar si ya existe el registro
-    UPDATE CONTROL_FECHAS_PEDIDO
+    UPDATE CONTROL_FECHAS_PEDIDOS
     SET ultimaFechaPedido = :NEW.fechaPedido
     WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante
       AND codSucursalSolicitada  = :NEW.codSucursalSolicitada
@@ -297,7 +317,7 @@ BEGIN
     BEGIN
         SELECT ultimaFechaPedido
         INTO v_ultima_fecha
-        FROM CONTROL_FECHAS_PEDIDO
+        FROM CONTROL_FECHAS_PEDIDOS
         WHERE codSucursalSolicitante = :NEW.codSucursalSolicitante
           AND codSucursalSolicitada  = :NEW.codSucursalSolicitada
           AND codVino                = :NEW.codVino;

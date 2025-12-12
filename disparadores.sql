@@ -2,19 +2,18 @@
 /* Mapeo de la comunidadAutonoma a delegación*/
 
 CREATE OR REPLACE FUNCTION get_delegacion(p_ca IN VARCHAR2) RETURN VARCHAR2 IS
-    BEGIN
-        IF p_ca IN ('Castilla-León', 'Castilla-La Mancha', 'Aragón', 'Madrid', 'La Rioja') THEN
-            RETURN 'CENTRO';
-        ELSIF p_ca IN ('Cataluña', 'Baleares', 'País Valenciano', 'Murcia') THEN
-            RETURN 'LEVANTE';
-        ELSIF p_ca IN ('Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra') THEN
-            RETURN 'NORTE';
-        ELSIF p_ca IN ('Andalucía', 'Extremadura', 'Canarias', 'Ceuta', 'Melilla') THEN
-            RETURN 'SUR';
-        ELSE
-            RETURN 'INVALIDA';
-        END IF;
-    END;
+BEGIN
+    IF p_ca IN ('Castilla-León', 'Castilla-La Mancha', 'Aragón', 'Madrid', 'La Rioja') THEN
+        RETURN 'CENTRO';
+    ELSIF p_ca IN ('Cataluña', 'Baleares', 'País Valenciano', 'Murcia') THEN
+        RETURN 'LEVANTE';
+    ELSIF p_ca IN ('Galicia', 'Asturias', 'Cantabria', 'País Vasco', 'Navarra') THEN
+        RETURN 'NORTE';
+    ELSIF p_ca IN ('Andalucía', 'Extremadura', 'Canarias', 'Ceuta', 'Melilla') THEN
+        RETURN 'SUR';
+    ELSE
+        RETURN 'INVALIDA';
+    END IF;
 END;
 /
 
@@ -300,7 +299,7 @@ BEGIN
 
     -- Si no se actualizó nada, insertamos el registro
     IF SQL%ROWCOUNT = 0 THEN
-        INSERT INTO CONTROL_FECHAS_PEDIDO
+        INSERT INTO CONTROL_FECHAS_PEDIDOS
             (codSucursalSolicitante, codSucursalSolicitada, codVino, ultimaFechaPedido)
         VALUES
             (:NEW.codSucursalSolicitante, :NEW.codSucursalSolicitada, :NEW.codVino, :NEW.fechaPedido);

@@ -625,6 +625,7 @@ BEGIN
             'Error interno: No se pudo eliminar el vino en el nodo correspondiente.');
     END IF;
 
+    COMMIT;
 
 EXCEPTION
     WHEN OTHERS THEN
@@ -649,21 +650,10 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20102, 'Error: El productor no existe.');
     END;  
 
-
-    v_nodo := get_nodo_destino(v_comunidadAutonoma);
-
-    FOR v IN (SELECT codVino FROM V_VINOS WHERE codProductor = p_codProductor) LOOP
-        BEGIN
-            baja_vino(v.codVino);
-        EXCEPTION
-            WHEN OTHERS THEN
-                -- Propagamos el error con un mensaje claro
-                RAISE_APPLICATION_ERROR(
-                    -20106,
-                    'Error al eliminar el productor debido al borrado de su vino ' || v.codVino || ': ' || SQLERRM
-                );
-        END;
-    END LOOP;
+    DELETE FROM perro1.VINOS WHERE codProductor = p_codProductor;
+    DELETE FROM perro2.VINOS WHERE codProductor = p_codProductor;
+    DELETE FROM perro3.VINOS WHERE codProductor = p_codProductor;
+    DELETE FROM perro4.VINOS WHERE codProductor = p_codProductor;
 
     -- BORRAR PRODUCTOR
     DELETE FROM perro1.PRODUCTORES WHERE codProductor = p_codProductor;

@@ -24,3 +24,4 @@ WHERE SO.CodSucursal = '&codSucursal'
   AND SO.CodCliente = C.CodCliente 
   AND V.denominacionOrigen IN ('Rioja', 'Albariño')
 GROUP BY C.nombre, C.tipoCliente;
+

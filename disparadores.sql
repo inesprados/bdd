@@ -59,12 +59,12 @@ DECLARE
 BEGIN
     -- CCAA del Cliente
     SELECT comunidadAutonoma INTO v_ca_cliente
-    FROM CLIENTES
+    FROM V_CLIENTES
     WHERE codCliente = :NEW.codCliente;
 
     -- CCAA de la Sucursal
     SELECT comunidadAutonoma INTO v_ca_sucursal
-    FROM SUCURSALES
+    FROM V_SUCURSALES
     WHERE codSucursal = :NEW.codSucursal;
 
     -- Mapeo
@@ -169,10 +169,10 @@ DECLARE
     v_ca_solicitada  SUCURSALES.comunidadAutonoma%TYPE;
 BEGIN
     SELECT comunidadAutonoma INTO v_ca_solicitante 
-    FROM SUCURSALES WHERE codSucursal = :NEW.codSucursalSolicitante;
+    FROM V_SUCURSALES WHERE codSucursal = :NEW.codSucursalSolicitante;
 
     SELECT comunidadAutonoma INTO v_ca_solicitada 
-    FROM SUCURSALES WHERE codSucursal = :NEW.codSucursalSolicitada;
+    FROM V_SUCURSALES WHERE codSucursal = :NEW.codSucursalSolicitada;
 
     -- DISTINTAS delegaciones
     IF get_delegacion(v_ca_solicitante) = get_delegacion(v_ca_solicitada) THEN
@@ -196,17 +196,17 @@ BEGIN
 
     --Primero obtenemos la comunidad del solicitante
     SELECT comunidadAutonoma INTO ca_solicitante
-    FROM SUCURSALES 
+    FROM V_SUCURSALES 
     WHERE codSucursal = :NEW.codSucursalSolicitante;
 
     -- Obtenemos la comunidad autonoma de la sucursal solicitada
     SELECT comunidadAutonoma INTO ca_solicitada
-    FROM SUCURSALES 
+    FROM V_SUCURSALES 
     WHERE codSucursal = :NEW.codSucursalSolicitada;
 
     --Obtenemos la comunidad autonoma del vino
     SELECT comunidadAutonoma INTO ca_vino
-    FROM VINOS 
+    FROM V_VINOS 
     WHERE codVino = :NEW.codVino;
 
     --CASO 1: el vino pertenece a la misma delegacion
@@ -347,15 +347,19 @@ FOR EACH ROW
 DECLARE
     v_ultima_fecha_pedido   DATE;
 BEGIN
+    -- Buscamos la fecha de la última solicitud del cliente para ese vino
     SELECT MAX(fechaSolicitud) INTO v_ultima_fecha_pedido
-    FROM SOLICITUD WHERE codSucursal = :NEW.codSucursalSolicitante AND codVino = :NEW.codVino;
+    FROM SOLICITUD 
+    WHERE codSucursal = :NEW.codSucursalSolicitante 
+      AND codVino = :NEW.codVino;
 
     IF v_ultima_fecha_pedido IS NOT NULL THEN
-        IF :NEW.fechaPedido <= v_ultima_fecha_pedido THEN
+        -- CLAVE: Usamos < (menor estricto) para que NO falle si las fechas son iguales.
+        IF :NEW.fechaPedido < v_ultima_fecha_pedido THEN
             RAISE_APPLICATION_ERROR(
                 -20021,
-                'Error: La fecha del pedido (' || TO_CHAR(:NEW.fechaPedido,'DD-MM-YYYY') || 
-                ') debe ser posterior a la última solicitud del cliente (' || 
+                'Error R21: La fecha del pedido (' || TO_CHAR(:NEW.fechaPedido,'DD-MM-YYYY') || 
+                ') no puede ser anterior a la solicitud del cliente (' || 
                 TO_CHAR(v_ultima_fecha_pedido,'DD-MM-YYYY') || ').'
             );
         END IF;

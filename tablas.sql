@@ -71,8 +71,6 @@ CREATE TABLE SUMINISTRO (
     CONSTRAINT pk_suministro PRIMARY KEY (codSucursal, codVino, fechaPedido), -- R2
     CONSTRAINT fk_suministro_sucursal FOREIGN KEY (codSucursal)
         REFERENCES SUCURSALES(codSucursal), -- R2
-    CONSTRAINT fk_suministro_vino FOREIGN KEY (codVino)
-        REFERENCES VINOS(codVino) -- R11
 );
 
 CREATE TABLE PEDIDO (
@@ -85,10 +83,6 @@ CREATE TABLE PEDIDO (
     CONSTRAINT pk_pedido PRIMARY KEY (codSucursalSolicitante, codSucursalSolicitada, codVino, fechaPedido),
     CONSTRAINT fk_pedido_solicitante FOREIGN KEY (codSucursalSolicitante)
         REFERENCES SUCURSALES(codSucursal), -- R2
-    CONSTRAINT fk_pedido_solicitada FOREIGN KEY (codSucursalSolicitada)
-        REFERENCES SUCURSALES(codSucursal), -- R2
-    CONSTRAINT fk_pedido_vino FOREIGN KEY (codVino)
-        REFERENCES VINOS(codVino) -- R2
 );
 
 CREATE TABLE SOLICITUD (
@@ -99,12 +93,6 @@ CREATE TABLE SOLICITUD (
     cantidadSolicitada      INT NOT NULL,
 
     CONSTRAINT pk_solicita PRIMARY KEY (codVino, codSucursal, codCliente, fechaSolicitud),
-    CONSTRAINT fk_solicitud_vino FOREIGN KEY (codVino)
-        REFERENCES VINOS(codVino), -- R2
-    CONSTRAINT fk_solicita_sucursal FOREIGN KEY (codSucursal)
-        REFERENCES SUCURSALES(codSucursal), -- R2
-    CONSTRAINT fk_solicita_cliente FOREIGN KEY (codCliente)
-        REFERENCES CLIENTES(codCliente) -- R2
 );
 
 

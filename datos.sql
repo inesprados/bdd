@@ -73,7 +73,7 @@ BEGIN
     alta_empleado('16', '16161616P', 'Dolores', 'Calatrava 9, Alicante', '8', '14/05/2018', 1800);
     -- Sucursal 9
     alta_empleado('17', '17171717Q', 'Elías', 'Arenal 17, P. Mallorca', '9', '13/06/2019', 2000);
-    alta_empleado('18', '18181818R', 'Concepción', 'Campastilla 14, P. Mallorca', '9', '14/08/2020', 1800); -- Fecha aprox PDF
+    alta_empleado('18', '18181818R', 'Concepción', 'Campastilla 14, P. Mallorca', '9', '18/08/2020', 1800); 
     -- Sucursal 10
     alta_empleado('19', '19191919S', 'Gabriel', 'Hércules 19, La Coruña', '10', '19/09/2015', 2000);
     alta_empleado('20', '20202020T', 'Octavio', 'María Pita 45, La Coruña', '10', '20/10/2017', 1800);
@@ -252,7 +252,7 @@ BEGIN
     alta_pedido('2', '5', '2', '04/04/2025', 20);
     alta_pedido('2', '8', '6', '16/09/2025', 40);
 
-    -- Sucursal 3 pide a 6 y 9 (PDF dice 5 y 9)
+    -- Sucursal 3 pide a 6 y 9 
     alta_pedido('3', '6', '14', '15/07/2025', 200);
     alta_pedido('3', '9', '16', '21/09/2025', 100);
 

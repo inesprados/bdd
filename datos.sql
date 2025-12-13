@@ -229,7 +229,7 @@ BEGIN
     alta_actualiza_solicitud('1', '4', '7', '15/02/2025', 80);
     alta_actualiza_solicitud('7', '5', '7', '17/04/2025', 50);
     alta_actualiza_solicitud('10', '4', '7', '21/06/2025', 70);
-    alta_actualiza_solicitud('12', '5', '7', '23/07/2025', 40); -- OJO: Vino 12 no existe en PDF Vinos, asumo typo por vino 2 o similar. (Asumiendo que es correcto en PDF, fallará si no existe vino 12. En PDF Vinos salta del 10 al 13. Voy a comentar esta línea por seguridad o cambiarla). *CORRECCIÓN: Vino 12 no existe. Omito esta línea para evitar error crítico.*
+    --alta_actualiza_solicitud('12', '5', '7', '23/07/2025', 40); -- OJO: Vino 12 no existe en PDF Vinos, asumo typo por vino 2 o similar. (Asumiendo que es correcto en PDF, fallará si no existe vino 12. En PDF Vinos salta del 10 al 13. Voy a comentar esta línea por seguridad o cambiarla). *CORRECCIÓN: Vino 12 no existe. Omito esta línea para evitar error crítico.*
 
     -- Cliente 8 (Sucursales 6, 6, 4)
     alta_actualiza_solicitud('14', '6', '8', '11/01/2025', 50);
@@ -243,22 +243,22 @@ BEGIN
        8. PEDIDOS ENTRE SUCURSALES 
        La columna "Sucursal" indica a quién se le pide.
        ========================================================== */
-    -- Sucursal 1 pide a 4
-    alta_pedido('1', '4', '10', '13/06/2025', 100);
-    alta_pedido('1', '4', '6',  '05/05/2025', 50);
+    -- Sucursal 1 pide a 4 y 10
+    alta_pedido('1', '4', '4', '13/06/2025', 100);
+    alta_pedido('1', '10', '7',  '05/05/2025', 50);
     
-    -- Sucursal 2 pide a 7
+    -- Sucursal 2 pide a 7 y 5 y 8
     alta_pedido('2', '7', '5', '12/07/2025', 150);
-    alta_pedido('2', '7', '2', '04/04/2025', 20);
-    alta_pedido('2', '7', '8', '16/09/2025', 40);
+    alta_pedido('2', '5', '2', '04/04/2025', 20);
+    alta_pedido('2', '8', '6', '16/09/2025', 40);
 
-    -- Sucursal 3 pide a 5 y 9 (PDF dice 5 y 9)
-    alta_pedido('3', '5', '6', '15/07/2025', 200);
+    -- Sucursal 3 pide a 6 y 9 (PDF dice 5 y 9)
+    alta_pedido('3', '6', '14', '15/07/2025', 200);
     alta_pedido('3', '9', '16', '21/09/2025', 100);
 
-    -- Sucursal 4 pide a 1 y 10
-    alta_pedido('4', '1', '7', '22/06/2025', 70);
-    alta_pedido('4', '10', '6', '22/05/2025', 70);
+    -- Sucursal 4 pide a 1 y 7
+    alta_pedido('4', '1', '10', '22/06/2025', 70);
+    alta_pedido('4', '7', '6', '22/05/2025', 70);
 
     -- Sucursal 5 pide a 10
     alta_pedido('5', '10', '7', '18/04/2025', 50);
@@ -266,12 +266,12 @@ BEGIN
     -- Sucursal 7 pide a 2
     alta_pedido('7', '2', '21', '18/09/2025', 200);
 
-    -- Sucursal 8 pide a 11
+    -- Sucursal 8 pide a 11 y 2
     alta_pedido('8', '11', '15', '14/01/2025', 100);
+    alta_pedido('8', '2', '9', '20/02/2025', 150);
 
-    -- Sucursal 9 pide a 2 y 9 (Suc 9 pide a Suc 9? Raro, pero PDF dice Suc 2 y 9).
-    alta_pedido('9', '2', '3', '20/02/2025', 150);
-    alta_pedido('9', '9', '18', '02/10/2025', 100); -- Pide a sí misma? Posible error PDF.
+    -- Sucursal 9 pide a 3 y 12
+    alta_pedido('9', '3', '18', '02/10/2025', 100);
     alta_pedido('9', '12', '19', '28/06/2025', 160);
 
     -- Sucursal 10 pide a 4 y 8

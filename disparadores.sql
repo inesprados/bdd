@@ -349,9 +349,7 @@ DECLARE
 BEGIN
     -- Buscamos la fecha de la última solicitud del cliente para ese vino
     SELECT MAX(fechaSolicitud) INTO v_ultima_fecha_pedido
-    FROM SOLICITUD 
-    WHERE codSucursal = :NEW.codSucursalSolicitante 
-      AND codVino = :NEW.codVino;
+    FROM V_SOLICITUD WHERE codSucursal = :NEW.codSucursalSolicitante AND codVino = :NEW.codVino;
 
     IF v_ultima_fecha_pedido IS NOT NULL THEN
         -- CLAVE: Usamos < (menor estricto) para que NO falle si las fechas son iguales.

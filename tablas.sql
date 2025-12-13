@@ -115,8 +115,6 @@ CREATE TABLE CONTROL_STOCK (
     totalPedidoSuc      INT DEFAULT 0, -- Consumo actual
 
     CONSTRAINT pk_control PRIMARY KEY (codSucursal, codVino),
-    CONSTRAINT fk_control_suc FOREIGN KEY (codSucursal) REFERENCES SUCURSALES(codSucursal),
-    CONSTRAINT fk_control_vin FOREIGN KEY (codVino) REFERENCES VINOS(codVino)
 );
 
 CREATE TABLE CONTROL_FECHAS_PEDIDOS(
